@@ -1,6 +1,7 @@
 // Test application for Arbin 3rd party protocol
 // (c)2017 Matteo Lucarelli
 // 20170510 - V0.1
+// 20170511 - V0.2 : new Arbin protocol version (1.1)
 
 #include "stdafx.h"
 #include "Arbin3pp.h"
@@ -12,11 +13,10 @@ bool gRepeat = true;
 
 void print_usage(const char *exe)
 {
-	std::cerr << "usage: " << exe << " [-1|-2|-3] device-ip-addr" << std::endl;
-	std::cerr << "-1: TODO" << std::endl;
-	std::cerr << "-2: TODO" << std::endl;
-	std::cerr << "-3: TODO" << std::endl;
-	std::cerr << "Default: connection test" << std::endl;
+	std::cerr << "usage: " << exe << " [-0|-1|-2] device-ip-addr" << std::endl;
+	std::cerr << "-0: (DEFAULT) connect and show incoming messages" << std::endl;
+	std::cerr << "-1: 0 + send CMD_SET_SYSTEMTIME every 5s" << std::endl;
+	std::cerr << "-2: 1 + change device third party mode" << std::endl;
 }
 
 BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
@@ -39,19 +39,22 @@ int main(int argc, char **argv)
 	int expected_argc = 2;
 
 	for (int i = 1; i < argc; i++){
+
+		if (!strcmp(argv[i], "-0")) {
+
+			runmode = 0;
+			expected_argc++;
+		}
+
 		if (!strcmp(argv[i], "-1")) {
 
 			runmode = 1;
 			expected_argc++;
 		}
+
 		if (!strcmp(argv[i], "-2")) {
 
 			runmode = 2;
-			expected_argc++;
-		}
-		if (!strcmp(argv[i], "-3")) {
-
-			runmode = 3;
 			expected_argc++;
 		}
 	}
@@ -70,7 +73,7 @@ int main(int argc, char **argv)
 	if (runmode == 0) {
 
 		// connection test
-		std::cout << "[CTRL][C] to disconnect" << std::endl;
+		std::cout << "[CTRL][C] to gracefully disconnect" << std::endl;
 		while (gRepeat) {
 
 			// TODO - get messages

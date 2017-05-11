@@ -27,6 +27,9 @@
     <ClInclude Include="..\A3P-1\win32_tcp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -38,5 +41,10 @@
     <ClCompile Include="..\A3P-1\win32_tcp_socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="w32_tcp_socket_test.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

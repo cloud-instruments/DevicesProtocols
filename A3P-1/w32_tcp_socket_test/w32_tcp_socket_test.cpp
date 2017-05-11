@@ -76,6 +76,7 @@ int main(int argc, char **argv)
 
 	// client flag
 	for (int i = 1; i < argc; i++) {
+
 		if (!strcmp(argv[i], "-c")) {
 
 			if (i >= argc - 1) {
@@ -90,6 +91,7 @@ int main(int argc, char **argv)
 			enable_keepalive = true;
 			expected_argc++;
 		}
+
 		if (!strcmp(argv[i], "-s")) {
 			enable_send = true;
 			expected_argc++;

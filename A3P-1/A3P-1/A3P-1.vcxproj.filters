@@ -30,6 +30,12 @@
     <ClInclude Include="win32_tcp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Arbin3ppMessages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -44,5 +50,13 @@
     <ClCompile Include="Arbin3pp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Arbin3ppMessages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="A3P-1.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

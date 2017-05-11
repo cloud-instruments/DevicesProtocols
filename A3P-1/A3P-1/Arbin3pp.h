@@ -1,28 +1,30 @@
-// Arbin 3rd party protocol helpers functions
-// (c)2017 Matteo Lucarelli
+/*!
+*  @brief     Arbin 3rd party protocol functions
+*  @author    Matteo Lucarelli
+*  @date      2017
+*/
 
 #pragma once
 
+// additional code required
 #include "win32_tcp_socket.h"
-#include <vector>
-#include <ctime>
+#include "Arbin3ppMessages.h"
 
-// channels ports
-#define A3P_CH1_PORT 5678
-#define A3P_CH2_PORT 5679
+/// channels ports
+#define A3P_CH1_PORT (5678)
+#define A3P_CH2_PORT (5679)
 
-typedef struct t_a3p_msg {
-	char buff[2096];
-	unsigned short size;
-} a3p_msg;
+#define A3P_KEEPALIVE_TIMEOUT_S (10)
 
-// connect device to addr
-// start watchdog, keepalive and receiving threads
+/// @brief connect device to addr
+/// @param addr IPv4 address of device
+/// start watchdog, keepalive and receiving threads
 int a3p_connect(const char* addr);
 
-// gracefully discconnect from device
+/// @brief gracefully discconnect from device
 int a3p_disconnect();
 
+// public only for test
 int a3p_send(a3p_msg msg);
 int a3p_get_ch1(a3p_msg *msg);
 int a3p_get_ch2(a3p_msg *msg);

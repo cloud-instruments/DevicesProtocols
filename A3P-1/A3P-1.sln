@@ -7,6 +7,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A3P-1", "A3P-1\A3P-1.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "w32_tcp_socket_test", "w32_tcp_socket_test\w32_tcp_socket_test.vcxproj", "{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A3P-msg-view", "A3P-msg-view\A3P-msg-view.vcxproj", "{C47C5091-5AB6-4973-89A1-0506F4AC31F8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "A3P-device-simulator", "A3P-device-simulator\A3P-device-simulator.vcxproj", "{DC36164E-B413-480D-B5B1-98E6C8621ABA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +35,22 @@ Global
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x64.Build.0 = Release|x64
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x86.ActiveCfg = Release|Win32
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x86.Build.0 = Release|Win32
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Debug|x64.ActiveCfg = Debug|x64
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Debug|x64.Build.0 = Debug|x64
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Debug|x86.ActiveCfg = Debug|Win32
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Debug|x86.Build.0 = Debug|Win32
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Release|x64.ActiveCfg = Release|x64
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Release|x64.Build.0 = Release|x64
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Release|x86.ActiveCfg = Release|Win32
+		{C47C5091-5AB6-4973-89A1-0506F4AC31F8}.Release|x86.Build.0 = Release|Win32
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Debug|x64.ActiveCfg = Debug|x64
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Debug|x64.Build.0 = Debug|x64
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Debug|x86.ActiveCfg = Debug|Win32
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Debug|x86.Build.0 = Debug|Win32
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Release|x64.ActiveCfg = Release|x64
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Release|x64.Build.0 = Release|x64
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Release|x86.ActiveCfg = Release|Win32
+		{DC36164E-B413-480D-B5B1-98E6C8621ABA}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
