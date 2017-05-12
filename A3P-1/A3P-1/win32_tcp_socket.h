@@ -23,6 +23,12 @@
 /// @warning leave 0 unless you know what you're doing
 #define W32_TCP_SOCKET_TIMEOUT_DEFAULT (0)
 
+/// @brief   enable(default) or disable stdout/stderr messages
+/// @param   enable true for enable, false to disable
+void w32_tcp_socket_quiet(bool enable);
+
+// TODO: add WSA starup / WSA cleanup
+
 /// @brief   create a server socket on port
 /// @param   port port to use
 /// @return  socket handle, INVALID_SOCKET on error

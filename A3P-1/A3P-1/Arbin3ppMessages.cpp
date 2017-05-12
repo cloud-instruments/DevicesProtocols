@@ -8,25 +8,6 @@
 // defined in documentation
 #define MAXCHANNELNO (16)
 
-// out messages 1ch (SW->FW)
-#define CMD_SET_SYSTEMTIME                  (0X5912A100)
-#define CMD_3RD_SDU                         (0X59EDA100)
-#define CMD_3RD_CTRLTYPE                    (0X59EDA200)
-#define CMD_3RD_SAMERANGE_CTRLTYPE          (0X59EDA900)
-#define CMD_3RD_READDATAORSTATE             (0X59EDA400)
-#define CMD_3RD_INFOCFG                     (0X59EDAA00)
-
-// in messages 1ch (FW->SW)
-#define CMD_3RD_SDU_FEEDBACK                (0XA9EDA100)
-#define CMD_3RD_CTRLTYPE_FEEDBACK           (0XA9EDA200)
-#define CMD_3RD_SAMERANGE_CTRLTYPE_FEEDBACK (0XA9EDA900)
-#define CMD_3RD_READDATAORSTATE_FEEDBACK    (0XA9EDA400)
-#define CMD_3RD_INFOCFG_FEEDBACK            (0XA9EDAA00)
-
-// in messages 2ch (FW->SW)
-#define CMD_3RD_ACTIONDONE                  (0XA9EDA800)
-#define CMD_SCHEDULE_REPORT_LOGDATA_DELTA   (0XD9418100)
-
 typedef struct
 {
 	unsigned long Second = 0; // Second
@@ -336,6 +317,10 @@ void a3p_CMD_3RD_SDU(a3p_msg *msg, bool mode_3dr_on, WORD ChNum, WORD ChCount)
 
 
 // IN MESSAGES /////////////////////////////////////////////////////////////////
+
+int a3p_CONFIRM_FEEDBAK_size() {
+	return 16 + sizeof(MP_CONFIRM_FEEDBACK);
+}
 
 int a3p_parse_CONFIRM_FEEDBACK(const a3p_msg *msg, bool *success, DWORD code)
 {

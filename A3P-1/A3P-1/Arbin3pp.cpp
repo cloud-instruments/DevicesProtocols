@@ -6,77 +6,150 @@
 
 #include <ctime>
 #include <queue>
+#include <iostream>
 
 // GLOBAL VARS /////////////////////////////////////////////////////////////////
 
 // TODO: struct for multiple devices
-static char gAddr[INET_ADDRSTRLEN];
-static std::queue<a3p_msg*> gCh1OutQueue;
-static std::queue<a3p_msg*> gCh1InQueue;
-static std::queue<a3p_msg*> gCh2InQueue;
-static bool gDoThreadCh1;
-static HANDLE gThreadCh1;
-static bool gDoThreadCh2;
-static HANDLE gThreadCh2;
-static std::queue<std::string> gMessageQueue;
+char gAddr[INET_ADDRSTRLEN];
+std::queue<a3p_msg> gCh1OutQueue;
+std::queue<a3p_msg*> gCh1InQueue;
+std::queue<a3p_msg*> gCh2InQueue;
+bool gDoThreadCh1 = false;
+HANDLE gThreadCh1=0;
+SOCKET gCh1Sock;
+bool gDoThreadCh2 = false;
+HANDLE gThreadCh2=0;
+SOCKET gCh2Sock;
+HANDLE  gCh1Mutex = CreateMutex(NULL, FALSE, NULL);
+std::queue<std::string> gMessageQueue;
+
+// LOGS ///////////////////////////////////////////////////////////////////////
+
+void a3p_queue_message(a3p_msg_level level, const std::string &message)
+{
+	// TODO: better time format (japanese)
+	std::string msg = std::to_string(time(NULL));
+	msg += " ";
+	msg = A3P_ML_DESCR(level);
+	msg += " ";
+	msg += message;
+
+	gMessageQueue.push(msg);
+}
+
+int a3p_get_message(std::string *str)
+{
+	if (gMessageQueue.empty()) return -1;
+
+	*str = gMessageQueue.front();
+	gMessageQueue.pop();
+	return 0;
+}
+
+// UTILS ///////////////////////////////////////////////////////////////////////
+
+int a3p_write(SOCKET s, a3p_msg &msg, std::string label)
+{
+	int ret = w32_tcp_socket_write(s, (char*)(msg.buff), msg.size);
+
+	if (ret<0) {
+
+		label += " w32_tcp_socket_write error";
+		a3p_queue_message(A3P_ERR, label);
+		return -1;
+
+	}
+	else if (ret != msg.size) {
+
+		label += " uncomplete write";
+		a3p_queue_message(A3P_ERR, label);
+		return -2;
+
+	}
+	return 0;
+}
+
+int a3p_read(SOCKET s, a3p_msg *msg, std::string label)
+{
+	int ret = w32_tcp_socket_read(s, (char*)msg->buff, msg->size, A3P_ANS_TIMEOUT_S);
+
+	if (ret == 0) {
+
+		label += " w32_tcp_socket_read timeout";
+		a3p_queue_message(A3P_ERR, label);
+		return -1;
+
+	}
+	else if (ret<0) {
+
+		label += " w32_tcp_socket_read error";
+		return -2;
+
+	}
+	else if (ret != msg->size) {
+
+		label += " w32_tcp_socket_read uncomplete";
+		return -3;
+	}
+	return 0;
+}
 
 // CH1 /////////////////////////////////////////////////////////////////////////
 
 int a3p_send(a3p_msg msg) {
 
-	// TODO
+	// TODO copy message in out queue
 	return -1;
 }
 
-// NOTE: message must be deleted after use
 int a3p_get_ch1(a3p_msg *msg) {
 
-	// TODO
-	return -1;
+	if (gCh1InQueue.empty()) return -1;
+
+	a3p_msg *front = gCh1InQueue.front();
+	*msg = *front;
+	gCh1InQueue.pop();
+	//delete front;
+	return 0;
 }
 
 DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
-
-	// connect device
-	SOCKET sock = w32_tcp_socket_client_create(gAddr, A3P_CH1_PORT);
-	if (sock == INVALID_SOCKET) {
-		// TODO manage error
-	}
-
-	// enable keepalive 
-	w32_tcp_socket_keepalive(sock, A3P_KEEPALIVE_TIMEOUT_S, 1);
-
-	// TODO: send 3RD_SDU
-	// TODO: read MP_CONFIRM
 
 	time_t prevTime=0;
 
 	while (gDoThreadCh1) {
 
 		// each 5s send CMD_SET_SYSTEMTIME
-		if (time(NULL)-prevTime >= 5){
+		if (time(NULL)-prevTime >= A3P_SST_TIMEOUT_S){
 
-			// TODO: send CMD_SET_SYSTEMTIME
+			// send CMD_SET_SYSTEMTIME
+			a3p_msg sst;
+			a3p_CMD_SET_SYSTEMTIME(&sst, (float)UX_TO_ARBIN_TIME(time(NULL)));
 
-			// TODO: recv 0x06
+			WaitForSingleObject(gCh1Mutex, INFINITE);
 
-			prevTime = time(NULL);
+			if (a3p_write(gCh1Sock, sst, "CH1") == 0) {
+
+				char buff[1];
+				if (w32_tcp_socket_read(gCh1Sock, buff, 1, A3P_ANS_TIMEOUT_S) == 1) {
+					if (*buff != 0x06) {
+						a3p_queue_message(A3P_ERR, "CH1 unexpected answer for CMD_SET_SYSTEMTIME");
+					}
+				} 
+				else {
+					a3p_queue_message(A3P_ERR, "CH1 no answer for CMD_SET_SYSTEMTIME");
+				}
+				prevTime = time(NULL);
+			}
+			else {
+				a3p_queue_message(A3P_ERR, "CH1 cannot write CMD_SET_SYSTEMTIME");
+			}
+
+			ReleaseMutex(gCh1Mutex);
 		}
-
-
-		//   send data fron queue
-		//   read answer in queue
-
-
-		// TODO: define or parameter
-		Sleep(100);
-
+		Sleep(500);
 	}
-
-	// TODO: send 3RD_SDU
-	// TODO: read MP_CONFIRM
-
-	w32_tcp_socket_close(sock);
 	return 0;
 }
 
@@ -92,38 +165,60 @@ int a3p_stop_ch1_thread() {
 
 	if (!gDoThreadCh1) return 0;
 	gDoThreadCh1 = false;
-
 	// TODO: error msg
 	if (WaitForSingleObject(gThreadCh1, 2000) == WAIT_TIMEOUT) {
 		TerminateThread(gThreadCh1, 0);
 	}
+	CloseHandle(gThreadCh1);
 	return 1;
 }
 
 // CH2 ////////////////////////////////////////////////////////////////////////
 
-// NOTE: message must be deleted after use
 int a3p_get_ch2(a3p_msg *msg) {
-	// TODO
-	return -1;
+
+	if (gCh2InQueue.empty()) return -1;
+
+	a3p_msg *front = gCh2InQueue.front();
+	*msg = *front;
+	gCh2InQueue.pop();
+	//delete front;
+
+	return 0;
 }
 
 DWORD WINAPI a3p_ch2_thread_funct(LPVOID lpParam) {
 
-	// connect device
-	SOCKET sock = w32_tcp_socket_client_create(gAddr, A3P_CH2_PORT);
-	if (sock == INVALID_SOCKET) {
-		// TODO manage error
-	}
+	a3p_msg *inmsg;
+	int ret;
 
 	while (gDoThreadCh2) {
 
-		//   receive data from ch2
-		//   OBSOLETE: gU16Token msg updates gU16Token value
-		//   other msg are put in incoming queue
+		// receive data from ch2 in incoming queue
+		inmsg = new a3p_msg(A3P_MAX_MSG_SIZE);
+		ret = w32_tcp_socket_read(gCh2Sock, (char*)inmsg->buff, A3P_MAX_MSG_SIZE);
+
+		if (ret == 0) {
+
+			a3p_queue_message(A3P_ERR, "CH2 peer disconnected");
+			delete inmsg;
+			break;
+
+		}
+		else if (ret<0) {
+
+			a3p_queue_message(A3P_ERR, "CH2 w32_tcp_socket_read error");
+			delete inmsg;
+			Sleep(100);
+
+		}
+		else {
+
+			inmsg->size = ret;
+			gCh2InQueue.push(inmsg);
+		}
 	}
 
-	w32_tcp_socket_close(sock);
 	return 0;
 }
 
@@ -140,21 +235,92 @@ int a3p_stop_ch2_thread() {
 	if (!gDoThreadCh2) return 0;
 	gDoThreadCh2 = false;
 
-	// TODO: error msg
 	if (WaitForSingleObject(gThreadCh2, 2000) == WAIT_TIMEOUT) {
+
+		// TODO: error msg
 		TerminateThread(gThreadCh2, 0);
 	}
+	CloseHandle(gThreadCh2);
 	return 1;
 }
 
 // PUBLICS ////////////////////////////////////////////////////////////////////
 
-int a3p_connect(const char* addr) {
+// TODO: CHNUM CHCOUNT
+int a3p_3rd_mode(bool enable) {
 
-	strncpy_s(gAddr, INET6_ADDRSTRLEN, addr, INET6_ADDRSTRLEN);
+	bool success = false;
+
+	// send CMD_SET_SYSTEMTIME
+	a3p_msg sdu;
+	a3p_CMD_3RD_SDU(&sdu, enable, A3P_DEFAULT_CH_NUM, A3P_DEFAULT_CH_COUNT);
+
+	WaitForSingleObject(gCh1Mutex, INFINITE);
+
+	if (a3p_write(gCh1Sock, sdu, "CH1") == 0) {
+
+		// get answer
+		a3p_msg ans(a3p_CONFIRM_FEEDBAK_size());
+
+		if (a3p_read(gCh1Sock,&ans,"CH1")==0) {
+			
+			a3p_parse_CONFIRM_FEEDBACK(&ans, &success, CMD_3RD_SDU_FEEDBACK);
+		}
+	}
+	ReleaseMutex(gCh1Mutex);
+
+	return (success?0:-1);
+}
+
+int a3p_init(const char* addr) {
+
+	strncpy_s(gAddr, INET_ADDRSTRLEN, addr, INET_ADDRSTRLEN);
+
+	gDoThreadCh1 = false;
+	gDoThreadCh2 = false;
+	gCh1Sock = INVALID_SOCKET;
+	gCh2Sock = INVALID_SOCKET;
+
+	// TODO: read w32_tcp_socket errors
+	w32_tcp_socket_quiet(true);
+
+	return 0;
+}
+
+int a3p_connect(bool sst, bool sdu) {
+
+	a3p_disconnect();
+
+	// connect CH1
+	gCh1Sock = w32_tcp_socket_client_create(gAddr, A3P_CH1_PORT);
+	if (gCh1Sock == INVALID_SOCKET) {
+
+		// TODO: get w32_tcp_sock error
+		a3p_queue_message(A3P_ERR, "CH1 Failed opening socket");
+		return -1;
+	}
+
+	// enable keepalive
+	w32_tcp_socket_keepalive(gCh1Sock, A3P_KEEPALIVE_TIMEOUT_S, 1);
+
+	// connect CH2
+	gCh2Sock = w32_tcp_socket_client_create(gAddr, A3P_CH2_PORT);
+	if (gCh2Sock == INVALID_SOCKET) {
+
+		// TODO: get w32_tcp_sock error
+		a3p_queue_message(A3P_ERR, "CH2 failed opening socket");
+		return -1;
+	}
+
+	// enable keepalive 
+	w32_tcp_socket_keepalive(gCh2Sock, A3P_KEEPALIVE_TIMEOUT_S, 1);
+
+	if (sdu) {
+		if (a3p_3rd_mode(true)!=0) a3p_queue_message(A3P_ERR, "Cannot enable 3rd party mode");
+	}
 
 	// start threads
-	a3p_start_ch1_thread();
+	if (sst) a3p_start_ch1_thread();
 	a3p_start_ch2_thread();
 
 	return 0;
@@ -162,9 +328,24 @@ int a3p_connect(const char* addr) {
 
 int a3p_disconnect() {
 
-	//( stop threads
+	// stop threads
 	a3p_stop_ch2_thread();
 	a3p_stop_ch1_thread();
+
+	// close sockets
+	w32_tcp_socket_close(gCh1Sock);
+	w32_tcp_socket_close(gCh2Sock);
+
+	a3p_3rd_mode(false);
+
+	return 0;
+}
+
+int a3p_delete() {
+
+	a3p_disconnect();
+
+	// TODO: empty queues
 
 	return 0;
 }

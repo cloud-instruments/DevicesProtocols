@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-bool show_recv(SOCKET s) {
+bool show_recv(SOCKET s, bool hex) {
 
 	char buff[256];
 	int ret;
@@ -27,8 +27,22 @@ bool show_recv(SOCKET s) {
 
 	} else {
 
-		*(buff + ret) = 0;
-		std::cout << "received:" << buff << std::endl;
+		if (hex) {
+
+			printf("received:\n");
+			for (unsigned int i = 0; i < ret; i++) {
+
+				printf("%02X ", (unsigned char)buff[i]);
+				if ((i + 1) % 8 == 0) printf("\n");
+			}
+			printf("\n");
+
+		} else {
+
+			*(buff + ret) = 0;
+			std::cout << "received:" << buff << std::endl;
+
+		}
 	}
 
 	return true;
@@ -60,10 +74,11 @@ bool get_send(SOCKET s) {
 
 void print_usage(const char *exe) {
 
-	std::cerr << "usage: " << exe << " [-c server-ip] [-k] [-r] port" << std::endl; 
+	std::cerr << "usage: " << exe << " [-c server-ip] [-k] [-s] port" << std::endl; 
 	std::cerr << "-c server-ip : connect as client to server-ip:port" << std::endl;
 	std::cerr << "-k : enable keepalive" << std::endl;
 	std::cerr << "-s : run in send mode" << std::endl;
+	std::cerr << "-b : HEX output mode (for listen mode)" << std::endl;
 	std::cerr << "default : open server on port in listen mode " << std::endl;
 }
 
@@ -73,6 +88,7 @@ int main(int argc, char **argv)
 	int expected_argc = 2;
 	bool enable_keepalive = false;
 	bool enable_send = false;
+	bool hex_output = false;
 
 	// client flag
 	for (int i = 1; i < argc; i++) {
@@ -94,6 +110,11 @@ int main(int argc, char **argv)
 
 		if (!strcmp(argv[i], "-s")) {
 			enable_send = true;
+			expected_argc++;
+		}
+
+		if (!strcmp(argv[i], "-b")) {
+			hex_output = true;
 			expected_argc++;
 		}
 	}
@@ -133,7 +154,7 @@ int main(int argc, char **argv)
 			while (repeat) {
 
 				if (enable_send) repeat = get_send(sock);
-				else repeat = show_recv(sock);
+				else repeat = show_recv(sock,hex_output);
 			}
 
 			w32_tcp_socket_close(sock);
@@ -180,7 +201,7 @@ int main(int argc, char **argv)
 					while (repeat) {
 
 						if (enable_send) repeat = get_send(c_sock);
-						else repeat = show_recv(c_sock);
+						else repeat = show_recv(c_sock,hex_output);
 					}
 
 					w32_tcp_socket_close(c_sock);

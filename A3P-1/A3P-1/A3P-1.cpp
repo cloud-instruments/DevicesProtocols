@@ -6,8 +6,11 @@
 #include "stdafx.h"
 #include "Arbin3pp.h"
 
-#include <iostream>
 #include <Windows.h>
+
+#include <string>
+#include <iostream>
+#include <iomanip>
 
 bool gRepeat = true;
 
@@ -17,44 +20,59 @@ void print_usage(const char *exe)
 	std::cerr << "-0: (DEFAULT) connect and show incoming messages" << std::endl;
 	std::cerr << "-1: 0 + send CMD_SET_SYSTEMTIME every 5s" << std::endl;
 	std::cerr << "-2: 1 + change device third party mode" << std::endl;
+
+	// TODO: output to file 
 }
 
+// ctrl-c handler
 BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 
-	switch (dwCtrlType)
-	{
-	case CTRL_C_EVENT:
-		printf("[Ctrl]+C\n");
-		gRepeat = false;
-		return TRUE;
-	default:
-		// Pass signal on to the next handler
-		return FALSE;
+	switch (dwCtrlType){
+		case CTRL_C_EVENT:
+			printf("[Ctrl]+C\n");
+			gRepeat = false;
+			return TRUE;
+		default:
+			return FALSE;
 	}
+}
+
+void show_buff(a3p_msg msg){
+
+	for (unsigned int i = 0; i <  msg.size; i++) {
+
+		std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)msg.buff[i] << " ";
+		if ((i + 1) % 8 == 0) std::cout << std::endl;
+	}
+	std::cout << std::endl;
 }
 
 int main(int argc, char **argv)
 {
-	int runmode = 0;
+	// intercept ctrl-c to gracefully close
+	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
+
+	bool sst = false;
+	bool sdu = false;
 	int expected_argc = 2;
 
 	for (int i = 1; i < argc; i++){
 
 		if (!strcmp(argv[i], "-0")) {
 
-			runmode = 0;
 			expected_argc++;
 		}
 
 		if (!strcmp(argv[i], "-1")) {
 
-			runmode = 1;
+			sst = true;
 			expected_argc++;
 		}
 
 		if (!strcmp(argv[i], "-2")) {
 
-			runmode = 2;
+			sst = true;
+			sdu = true;
 			expected_argc++;
 		}
 	}
@@ -65,31 +83,44 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
-
 	std::cout << "connecting " << argv[argc-1] << std::endl;
-	a3p_connect(argv[argc-1]);
+	a3p_init(argv[argc - 1]);
 
-	if (runmode == 0) {
+	if (a3p_connect(sst,sdu) != 0) {
 
-		// connection test
-		std::cout << "[CTRL][C] to gracefully disconnect" << std::endl;
-		while (gRepeat) {
+		std::cerr << "Connection refused" << std::endl;
+		return -1;
+	}
 
-			// TODO - get messages
-			Sleep(1000);
+	// connection test
+	std::cout << "[CTRL][C] to gracefully disconnect" << std::endl;
+	while (gRepeat) {
 
+		std::string msg;
+		while (a3p_get_message(&msg) == 0) {
+			std::cout << msg << std::endl;
+			Sleep(100);
 		}
 
-		// TODO: show all incoming messages
+		a3p_msg mch1;
+		if (a3p_get_ch1(&mch1) == 0) {
+			std::cout << "ch1 received " << std::dec << mch1.size << " bytes" << std::endl;
+			show_buff(mch1);
+		}
 
-	} else {
-		std::cerr << "MODE UNIMPLEMENTED" << std::endl;
-		Sleep(1000);
+		a3p_msg mch2;
+		if (a3p_get_ch2(&mch2) == 0) {
+			std::cout << "ch2 received " << std::dec << mch2.size << " bytes" << std::endl;
+			show_buff(mch2);
+		}
+
+		Sleep(100);
 	}
 
 	std::cout << "disconnecting" << std::endl;
 	a3p_disconnect();
+	a3p_delete();
+
     return 0;
 }
 

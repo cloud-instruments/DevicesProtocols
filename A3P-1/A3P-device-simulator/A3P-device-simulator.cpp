@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #include <iostream>
+#include <iomanip>
 #include "../A3P-1/win32_tcp_socket.h"
 #include "../A3P-1/Arbin3pp.h"
 
@@ -11,23 +12,23 @@ SOCKET sch1 = INVALID_SOCKET;
 SOCKET sch2 = INVALID_SOCKET;
 bool doRun = true;
 
-void cleanup()
-{
+void cleanup(){
+
 	w32_tcp_socket_close(sch1);
 	w32_tcp_socket_close(sch2);
 }
 
+// [CTRL][c] handler
 BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 
-	switch (dwCtrlType)
-	{
-	case CTRL_C_EVENT:
-		printf("[Ctrl]+C\n");
-		doRun = false;
-		return TRUE;
-	default:
-		// Pass signal on to the next handler
-		return FALSE;
+	switch (dwCtrlType){
+		case CTRL_C_EVENT:
+			printf("[Ctrl]+C\n");
+			doRun = false;
+			return TRUE;
+		default:
+			// Pass signal on to the next handler
+			return FALSE;
 	}
 }
 
@@ -35,41 +36,51 @@ DWORD WINAPI thread_funct(LPVOID lpParam) {
 
 	SOCKET s = *((SOCKET*)lpParam);
 
-	std::cout << s << std::endl;
+	std::cout << "waiting for client" << std::endl;
+	SOCKET sock = w32_tcp_socket_server_wait(s);
 
-	while (doRun) {
+	if (sock > 0) {
 
-		char buff[2096];
-		int ret;
+		std::cout << "client connected on socket " << sock << std::endl;
 
-		ret = w32_tcp_socket_read(s, buff, 2096);
+		while (doRun) {
 
-		if (ret == 0) {
+			char buff[4096];
+			int ret;
 
-			std::cout << "peer disconnected" << std::endl;
-			return -1;
+			ret = w32_tcp_socket_read(sock, buff, 4096);
 
-		}
-		else if (ret<0) {
+			if (ret == 0) {
 
-			std::cerr << "w32_tcp_socket_read error" << std::endl;
-			return -2;
+				std::cout << "peer disconnected on socket " << sock << std::endl;
+				break;
 
-		}
-		else {
+			}
+			else if (ret < 0) {
 
-			// TODO: show channel
-			// TODO: mutex to avoid message superimpositions
+				std::cerr << "w32_tcp_socket_read error on socket "  << sock << std::endl;
+				break;
 
-			printf("Received %i bytes:\n", ret);
-			for (unsigned int i = 0; i < ret; i++) {
+			} else {
 
-				printf("%02X ", buff[i]);
-				if ((i + 1) % 8 == 0) printf("\n");
+				// TODO: mutex to avoid message superimpositions
+
+				std::cout << "socket " << sock << " received " << std::dec << ret << " bytes" << std::endl;
+
+				for (unsigned int i = 0; i < ret; i++) {
+
+					std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(unsigned char)buff[i] << " ";
+					if ((i + 1) % 8 == 0) std::cout << std::endl;
+				}
+				std::cout << std::endl; 
 			}
 		}
 	}
+	else {
+		std::cerr << "w32_tcp_socket_server_wait error" << std::endl;
+	}
 
+	w32_tcp_socket_close(sock);
 	return 0;
 }
 
@@ -96,29 +107,19 @@ int main()
 		return -1;
 	}
 
-	// run two thread to receive data from both channels
-	HANDLE ch1Thread;
-	HANDLE ch2Thread;
+	HANDLE ch1Thread = CreateThread(0, 0, thread_funct, &sch1, 0, NULL);
+	HANDLE ch2Thread = CreateThread(0, 0, thread_funct, &sch2, 0, NULL);
 
-	while (doRun) {
+	while (doRun) Sleep(1000);
 
-		// TODO: wait connection
-		// print messages
-
-		/*HANDLE ch1Thread; = CreateThread(0, 0, thread_funct, &sch1, 0, NULL);
-		HANDLE ch2Thread; = CreateThread(0, 0, thread_funct, &sch2, 0, NULL);
-		WaitForSingleObject(ch1Thread, 2000);
-		WaitForSingleObject(ch2Thread, 2000);*/
-	}
-
-	/*if (WaitForSingleObject(ch1Thread, 2000) == WAIT_TIMEOUT) {
+	if (WaitForSingleObject(ch1Thread, 2000) == WAIT_TIMEOUT) {
 		std::cerr << "ch1Thread timeout" << std::endl;
 		TerminateThread(ch1Thread, 0);
 	}
 	if (WaitForSingleObject(ch2Thread, 2000) == WAIT_TIMEOUT) {
 		std::cerr << "ch2Thread timeout" << std::endl;
 		TerminateThread(ch1Thread, 0);
-	}*/
+	}
 
 	cleanup();
     return 0;

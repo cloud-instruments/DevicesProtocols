@@ -13,6 +13,7 @@ void show_buff(a3p_msg msg)
 		printf("%02X ", msg.buff[i]);
 		if ((i + 1) % 8 == 0) printf("\n");
 	}
+	printf("\n");
 }
 
 int main()
