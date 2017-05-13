@@ -16,7 +16,7 @@
 #define A3P_CH1_PORT (5678)
 #define A3P_CH2_PORT (5679)
 
-// timeoutto send  SET_SYSTEM_TIME 
+// timeout to send  SET_SYSTEM_TIME 
 #define A3P_SST_TIMEOUT_S (4)
 
 // timeout to wait answer on commands
@@ -57,7 +57,6 @@ int a3p_disconnect();
 int a3p_delete();
 
 int a3p_get_message(std::string *str);
-int a3p_send(a3p_msg msg);
 int a3p_get_ch1(a3p_msg *msg);
 int a3p_get_ch2(a3p_msg *msg);
 

@@ -4,30 +4,24 @@
 #include "stdafx.h"
 #include "win32_tcp_socket.h"
 
+#include <sstream>
 #include <iostream>
 
-// TODO: remove output, use queue or last_error
-bool gQuiet = false;
-
-void w32_tcp_socket_quiet(bool enable) {
-	gQuiet = enable;
-}
-
-SOCKET w32_tcp_socket_server_create(unsigned short port)
+w32_socket *w32_tcp_socket_server_create(unsigned short port)
 {
+	w32_socket *s = new w32_socket;
+
 	// init WSA
 	WSADATA wsaData;
 	int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (res != 0) {
-		if (!gQuiet) std::cerr << "WSAStartup failed: " << res << std::endl;
-		return INVALID_SOCKET;
+		s->lasterr = "WSAStartup failed: " + res;
+		return s;
 	}
-	
-	SOCKET s = INVALID_SOCKET;
 
 	// First call to socket() function
-	s = socket(AF_INET, SOCK_STREAM, 0);
-	if (s != INVALID_SOCKET) {
+	s->sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (s->sock != INVALID_SOCKET) {
 
 		// Initialize socket structure
 		struct sockaddr_in serv_addr;
@@ -37,44 +31,34 @@ SOCKET w32_tcp_socket_server_create(unsigned short port)
 		serv_addr.sin_port = htons(port);
 
 		// Now bind the host address using bind() call
-		res = bind(s, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+		res = bind(s->sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 		if (res != 0) {
 
-			if (!gQuiet) std::cerr << "bind failed: " << res << std::endl;
-			return INVALID_SOCKET;
+			s->lasterr = "bind failed: " + res;
+			return s;
 		}
 	}
 
 	return s;
 }
 
-SOCKET w32_tcp_socket_client_create(const char* addr, unsigned short port, float timeout_sec) {
+w32_socket *w32_tcp_socket_client_create(const char* addr, unsigned short port) {
+
+	w32_socket *s = new w32_socket;
 
 	// init WSA
 	WSADATA wsaData;
 	int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (res != 0) {
-		if (!gQuiet) std::cerr << "WSAStartup failed: " << res << std::endl;
-		return INVALID_SOCKET;
+		s->lasterr = "WSAStartup failed: " + res;
+		return s;
 	}
-
-	SOCKET s = INVALID_SOCKET;
 
 	// Create the client socket
-	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (s == INVALID_SOCKET) {
-		if (!gQuiet) std::cerr << "socket failed: " << WSAGetLastError() << std::endl;
-		return INVALID_SOCKET;
-	}
-
-	if (timeout_sec > 0) {
-
-		// set the socket in non-blocking
-		unsigned long mode = 1;
-		if (ioctlsocket(s, FIONBIO, &mode) != NO_ERROR) {
-			if (!gQuiet) std::cerr << "ioctlsocket failed: " << WSAGetLastError() << std::endl;
-			return INVALID_SOCKET;
-		}
+	s->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s->sock == INVALID_SOCKET) {
+		s->lasterr = "socket failed: " + WSAGetLastError();
+		return s;
 	}
 
 	// Connect to server
@@ -85,49 +69,28 @@ SOCKET w32_tcp_socket_client_create(const char* addr, unsigned short port, float
 	server.sin_port = htons(port);
 
 	// if WSAGetLastError == WSAEWOULDBLOCK should retry)
-	if (connect(s, (struct sockaddr *)&server, sizeof(server)) == SOCKET_ERROR) {
-		if (!gQuiet) std::cerr << "connect to " << addr << ":" << port << " failed: " << WSAGetLastError() << std::endl;
-
+	if (connect(s->sock, (struct sockaddr *)&server, sizeof(server)) == SOCKET_ERROR) {
+		std::stringstream ss;
+		ss << "connect to " << addr << ":" << port << " failed: " << WSAGetLastError();
+		s->lasterr = ss.str();
+		//s->lasterr = "connect to " + addr + ":" + port + " failed: " + WSAGetLastError();
 		// TODO WSAGetLastError==WSAECONNREFUSED 10061
-		return INVALID_SOCKET;
-	}
-
-	if (timeout_sec > 0) {
-
-		// reset to blocking mode
-		unsigned long mode = 0;
-		if (ioctlsocket(s, FIONBIO, &mode) != NO_ERROR) {
-			if (!gQuiet) std::cerr << "ioctlsocket failed: " << WSAGetLastError() << std::endl;
-			return INVALID_SOCKET;
-		}
-
-		// test if socket is ready to write
-		fd_set Write, Err;
-		FD_ZERO(&Write);
-		FD_ZERO(&Err);
-		FD_SET(s, &Write);
-		FD_SET(s, &Err);
-		TIMEVAL Timeout;
-		Timeout.tv_sec = (int)(timeout_sec);
-		Timeout.tv_usec = (int)(W32_TCP_SOCKET_S2U(timeout_sec - (int)timeout_sec));
-		select(0, NULL, &Write, &Err, &Timeout);
-		if (FD_ISSET(s, &Write) == 0) {
-			return INVALID_SOCKET;
-		}
+		return s;
 	}
 
 	return s;
 }
 
-int w32_tcp_socket_keepalive(SOCKET s, float timeout_s, float interval_s)
+int w32_tcp_socket_keepalive(w32_socket *s, float timeout_s, float interval_s)
 {
+	s->lasterr.clear();
+
 	DWORD v = 1;
 	if (timeout_s == 0 && interval_s == 0) v = 0;
 
-	if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&v, sizeof(v)) != 0) {
-
-		if (!gQuiet) std::cerr << "setsockopt failed: " << WSAGetLastError() << std::endl;
-		return SOCKET_ERROR;
+	if (setsockopt(s->sock, SOL_SOCKET, SO_KEEPALIVE, (char *)&v, sizeof(v)) != 0) {
+		s->lasterr = "setsockopt failed: " + WSAGetLastError();
+		return -1;
 	}
 
 	if (v != 0) {
@@ -138,45 +101,41 @@ int w32_tcp_socket_keepalive(SOCKET s, float timeout_s, float interval_s)
 		k.keepaliveinterval = (u_long)(interval_s * 1000);
 
 		DWORD outsize = 0;
-		if  (WSAIoctl(s, SIO_KEEPALIVE_VALS, &k, sizeof(k), NULL, 0, &outsize, NULL, NULL) != 0 ) {
-			if (!gQuiet) std::cerr << "WSAIoctl failed: " << WSAGetLastError() << std::endl;
-			return SOCKET_ERROR;
+		if  (WSAIoctl(s->sock, SIO_KEEPALIVE_VALS, &k, sizeof(k), NULL, 0, &outsize, NULL, NULL) != 0 ) {
+			s->lasterr = "WSAIoctl failed: " + WSAGetLastError();
+			return -2;
 		}
 	}
 	return 0;
 }
 
+w32_socket *w32_tcp_socket_server_wait(w32_socket *s, int max_queue){
 
-SOCKET w32_tcp_socket_server_wait(SOCKET s, int max_queue)
-{
+	s->lasterr.clear();
+
+	// mark socket as passive
+	if (max_queue != SOMAXCONN) max_queue = SOMAXCONN_HINT(max_queue);
+	if (listen(s->sock, max_queue) != 0) return NULL;
+
+	// actual connection from the client
+	sockaddr_in client;
+	w32_socket *ns = new w32_socket;
+
+	ns->sock = accept(s->sock, (struct sockaddr *)&client, NULL);
+
+	if (ns->sock == INVALID_SOCKET) {
+
+		s->lasterr = "accept failed: " + WSAGetLastError();
+		delete ns;
+		return NULL;
+
+	}
+
 	// init WSA
 	WSADATA wsaData;
 	int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (res != 0) {
-		if (!gQuiet) std::cerr << "WSAStartup failed: " << res << std::endl;
-		return INVALID_SOCKET;
-	}
-
-	SOCKET ns = INVALID_SOCKET;
-
-	// mark socket as passive
-	if (max_queue != SOMAXCONN) max_queue = SOMAXCONN_HINT(max_queue);
-	if (listen(s, max_queue) != 0) return INVALID_SOCKET;
-
-	// actual connection from the client
-	sockaddr_in client;
-	ns = accept(s, (struct sockaddr *)&client, NULL);
-
-	if (ns == INVALID_SOCKET) {
-
-		if (!gQuiet) std::cerr << "accept failed: " << WSAGetLastError() << std::endl;
-
-	}else {
-
-		char addr[16];
-		inet_ntop(AF_INET, &(client.sin_addr), addr, 16);
-		if (!gQuiet) std::cout << "accepted " << addr << ":" << ntohs(client.sin_port) << std::endl;
-
+		ns->lasterr = "WSAStartup failed: " + res;
 	}
 
 	// 10093: WSANOTINITIALISED
@@ -184,80 +143,101 @@ SOCKET w32_tcp_socket_server_wait(SOCKET s, int max_queue)
 	return ns;
 }
 
-int w32_tcp_socket_read(SOCKET s, char* buff, int buff_size, float timeout_sec) {
+int w32_tcp_socket_read(w32_socket *s, char* buff, int buff_size, float timeout_sec) {
+
+	s->lasterr.clear();
 
 	// test read select
 	if (timeout_sec>0) {
 
-		fd_set Read, Err;
+		fd_set Read;
 		FD_ZERO(&Read);
-		FD_ZERO(&Err);
-		FD_SET(s, &Read);
-		FD_SET(s, &Err);
+		FD_SET(s->sock, &Read);
 		TIMEVAL Timeout;
 		Timeout.tv_sec = (int)(timeout_sec);
 		Timeout.tv_usec = (int)(W32_TCP_SOCKET_S2U(timeout_sec - (int)timeout_sec));
-		select(0, &Read, NULL, &Err, &Timeout);
-		if (FD_ISSET(s, &Read) == 0) {
+		if (select(0, &Read, NULL, NULL, &Timeout) <= 0) {
 			return 0;
 		}
 	}
 
-	int ret = recv(s, buff, buff_size, 0);
+	int ret = recv(s->sock, buff, buff_size, 0);
 	if (ret < 0) {
-		if (!gQuiet) std::cerr << "recv failed: " << WSAGetLastError() << std::endl;
-		// WSAECONNRESET 10054 connection hard closed by peer
+
+		if (WSAGetLastError() == 10054) {
+			s->lasterr = "peer disconnected";
+			return -1;
+		}
+
+		s->lasterr = "recv failed: " + WSAGetLastError();
+		return -2;
 	}
 	return ret;
 }
 
-int w32_tcp_socket_write(SOCKET s, const char* buff, int buff_size, float timeout_sec) {
+int w32_tcp_socket_write(w32_socket *s, const char* buff, int buff_size, float timeout_sec) {
+
+	s->lasterr.clear();
 
 	// test write select
 	if (timeout_sec > 0){
 
-		fd_set Write, Err;
+		fd_set Write;
 		FD_ZERO(&Write);
-		FD_ZERO(&Err);
-		FD_SET(s, &Write);
-		FD_SET(s, &Err);
+		FD_SET(s->sock, &Write);
 		TIMEVAL Timeout;
 		Timeout.tv_sec = (int)(timeout_sec);
 		Timeout.tv_usec = (int)(W32_TCP_SOCKET_S2U(timeout_sec - (int)timeout_sec));
-		select(0, NULL, &Write, &Err, &Timeout);
-		if (FD_ISSET(s, &Write) == 0) {
+		if (select(0, NULL, &Write, NULL, &Timeout) <= 0){
 			return 0;
 		}
 	}
 
-	int ret = send(s, buff, buff_size, 0);
-	if (ret == SOCKET_ERROR) {
-		if (!gQuiet) std::cerr << "send failed: " << WSAGetLastError() << std::endl;
-	}
+	int ret = send(s->sock, buff, buff_size, 0);
+	if (ret < 0) {
+
+		if (WSAGetLastError() == 10054) {
+			s->lasterr = "peer disconnected";
+			return -1;
+		}
+
+		s->lasterr = "send failed: " + WSAGetLastError();
+		return -2;
+	}	
+	
+	/*if (ret == SOCKET_ERROR) {
+		s->lasterr = "send failed: " + WSAGetLastError();
+	}*/
 
 	return ret;
 }
 
-int w32_tcp_socket_close(SOCKET s) {
+int w32_tcp_socket_close(w32_socket **s) {
 
-	int ret = 0;
+	if (!(*s)) return 0;
 
-	if (s != INVALID_SOCKET) {
+	(*s)->lasterr.clear();
+
+	if ((*s)->sock != INVALID_SOCKET) {
 
 		// to gracefully close
-		if (shutdown(s, SD_BOTH) == SOCKET_ERROR) {
+		if (shutdown((*s)->sock, SD_BOTH) == SOCKET_ERROR) {
 			int err = WSAGetLastError();
 			if (err != WSAENOTCONN) {
-				if (!gQuiet) std::cerr << "shutdown failed: " << err << std::endl;
-				ret = SOCKET_ERROR;
+				(*s)->lasterr = "shutdown failed: " + err;
+				return -1;
 			}
 		}
 
 		// TODO intercept error
-		closesocket(s);
+		closesocket((*s)->sock);
 	}
 
 	WSACleanup();
-	return ret;
+
+	delete (*s);
+	*s = NULL;
+
+	return 0;
 }
 

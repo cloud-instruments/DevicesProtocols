@@ -36,6 +36,9 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="w32_log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -44,15 +47,13 @@
     <ClCompile Include="A3P-1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="win32_tcp_socket.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Arbin3pp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Arbin3ppMessages.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="win32_tcp_socket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="A3P-1.rc">

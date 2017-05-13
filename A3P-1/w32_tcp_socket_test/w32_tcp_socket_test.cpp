@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-bool show_recv(SOCKET s, bool hex) {
+bool show_recv(w32_socket *s, bool hex) {
 
 	char buff[256];
 	int ret;
@@ -48,7 +48,7 @@ bool show_recv(SOCKET s, bool hex) {
 	return true;
 }
 
-bool get_send(SOCKET s) {
+bool get_send(w32_socket *s) {
 
 	std::string buff;
 	std::cout << "string to send ('q' to stop):";
@@ -129,14 +129,14 @@ int main(int argc, char **argv)
 
 	if (server!="") {
 
-		SOCKET sock;
+		w32_socket *sock;
 
 		std::cout << "connecting server " << server << ":" << port << std::endl;
 		sock = w32_tcp_socket_client_create(server.c_str(), port);
 
-		if (sock == INVALID_SOCKET) {
+		if (!sock->lasterr.empty()) {
 
-			std::cerr << "w32_tcp_socket_client_create error" << std::endl;
+			std::cerr << "ERROR w32_tcp_socket_client_create:" << sock->lasterr << std::endl;
 
 		} else {
 
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 				if (w32_tcp_socket_keepalive(sock, 5, 1) == 0) {
 					std::cout << "keepalive enabled" << std::endl;
 				} else {
-					std::cerr << "w32_tcp_socket_keepalive error" << std::endl;
+					std::cerr << "ERROR w32_tcp_socket_keepalive:" << sock->lasterr << std::endl;
 				}
 			}
 
@@ -157,24 +157,24 @@ int main(int argc, char **argv)
 				else repeat = show_recv(sock,hex_output);
 			}
 
-			w32_tcp_socket_close(sock);
+			w32_tcp_socket_close(&sock);
 		}
 
 	} else {
 
-		SOCKET sock, c_sock;
+		w32_socket *sock, *c_sock;
 
 		std::cout << "opening server on port:" << port << std::endl;
 
 		sock = w32_tcp_socket_server_create(port);
 
-		if (sock == INVALID_SOCKET ) {
+		if (!sock->lasterr.empty() ) {
 
 			std::cerr << "w32_tcp_socket_server_create error" << std::endl;
 
 		} else {
 
-			std::cout << "SOCKET:" << sock << std::endl;
+			std::cout << "SOCKET:" << sock->sock << std::endl;
 
 			while (true) {
 
@@ -183,10 +183,10 @@ int main(int argc, char **argv)
 				// accept
 				c_sock = w32_tcp_socket_server_wait(sock);
 
-				if (c_sock>0) {
+				if (c_sock!=NULL) {
 
 					std::cout << "client connected" << std::endl;
-					std::cout << "SOCKET:" << c_sock << std::endl;
+					std::cout << "SOCKET:" << c_sock->sock << std::endl;
 
 					if (enable_keepalive) {
 						if (w32_tcp_socket_keepalive(c_sock, 5, 1) == 0) {
@@ -204,12 +204,12 @@ int main(int argc, char **argv)
 						else repeat = show_recv(c_sock,hex_output);
 					}
 
-					w32_tcp_socket_close(c_sock);
+					w32_tcp_socket_close(&c_sock);
 				}
 			}
 		}
 
-		w32_tcp_socket_close(sock);
+		w32_tcp_socket_close(&sock);
 	}
 
     return 0;

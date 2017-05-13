@@ -12,15 +12,14 @@
 
 // TODO: struct for multiple devices
 char gAddr[INET_ADDRSTRLEN];
-std::queue<a3p_msg> gCh1OutQueue;
 std::queue<a3p_msg*> gCh1InQueue;
-std::queue<a3p_msg*> gCh2InQueue;
+std::queue<a3p_msg*> gCh2InQueue; 
 bool gDoThreadCh1 = false;
 HANDLE gThreadCh1=0;
-SOCKET gCh1Sock;
+w32_socket *gCh1Sock;
 bool gDoThreadCh2 = false;
 HANDLE gThreadCh2=0;
-SOCKET gCh2Sock;
+w32_socket *gCh2Sock;
 HANDLE  gCh1Mutex = CreateMutex(NULL, FALSE, NULL);
 std::queue<std::string> gMessageQueue;
 
@@ -49,30 +48,36 @@ int a3p_get_message(std::string *str)
 
 // UTILS ///////////////////////////////////////////////////////////////////////
 
-int a3p_write(SOCKET s, a3p_msg &msg, std::string label)
+int a3p_write(w32_socket *s, a3p_msg &msg, std::string label)
 {
 	int ret = w32_tcp_socket_write(s, (char*)(msg.buff), msg.size);
 
 	if (ret<0) {
 
-		label += " w32_tcp_socket_write error";
-		a3p_queue_message(A3P_ERR, label);
-		return -1;
-
+		if (ret == -1) {
+			label += " peer disconnected";
+			a3p_queue_message(A3P_ERR, label);
+			return -1;
+		}
+		else {
+			label += " w32_tcp_socket_write error";
+			a3p_queue_message(A3P_ERR, label);
+			return -2;
+		}
 	}
 	else if (ret != msg.size) {
 
 		label += " uncomplete write";
 		a3p_queue_message(A3P_ERR, label);
-		return -2;
+		return -3;
 
 	}
 	return 0;
 }
 
-int a3p_read(SOCKET s, a3p_msg *msg, std::string label)
+int a3p_read(w32_socket *s, a3p_msg *msg, std::string label)
 {
-	int ret = w32_tcp_socket_read(s, (char*)msg->buff, msg->size, A3P_ANS_TIMEOUT_S);
+	int ret = w32_tcp_socket_read(s, (char*)msg->buff, msg->size, (float)A3P_ANS_TIMEOUT_S);
 
 	if (ret == 0) {
 
@@ -83,7 +88,7 @@ int a3p_read(SOCKET s, a3p_msg *msg, std::string label)
 	}
 	else if (ret<0) {
 
-		label += " w32_tcp_socket_read error";
+		label += " w32_tcp_socket_read error: " + s->lasterr;
 		return -2;
 
 	}
@@ -92,16 +97,11 @@ int a3p_read(SOCKET s, a3p_msg *msg, std::string label)
 		label += " w32_tcp_socket_read uncomplete";
 		return -3;
 	}
+
 	return 0;
 }
 
 // CH1 /////////////////////////////////////////////////////////////////////////
-
-int a3p_send(a3p_msg msg) {
-
-	// TODO copy message in out queue
-	return -1;
-}
 
 int a3p_get_ch1(a3p_msg *msg) {
 
@@ -110,13 +110,15 @@ int a3p_get_ch1(a3p_msg *msg) {
 	a3p_msg *front = gCh1InQueue.front();
 	*msg = *front;
 	gCh1InQueue.pop();
-	//delete front;
+	//delete front; TODO
 	return 0;
 }
 
 DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 
+	a3p_queue_message(A3P_DBG, "CH1 thread started");
 	time_t prevTime=0;
+
 
 	while (gDoThreadCh1) {
 
@@ -129,7 +131,8 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 
 			WaitForSingleObject(gCh1Mutex, INFINITE);
 
-			if (a3p_write(gCh1Sock, sst, "CH1") == 0) {
+			int ret = a3p_write(gCh1Sock, sst, "CH1");
+			if (ret == 0) {
 
 				char buff[1];
 				if (w32_tcp_socket_read(gCh1Sock, buff, 1, A3P_ANS_TIMEOUT_S) == 1) {
@@ -139,17 +142,24 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 				} 
 				else {
 					a3p_queue_message(A3P_ERR, "CH1 no answer for CMD_SET_SYSTEMTIME");
+					//break;
 				}
 				prevTime = time(NULL);
 			}
-			else {
+			/*else if (ret == -1) {
+
+				break;
+			}*/
+			else{
 				a3p_queue_message(A3P_ERR, "CH1 cannot write CMD_SET_SYSTEMTIME");
+				break;
 			}
 
 			ReleaseMutex(gCh1Mutex);
 		}
 		Sleep(500);
 	}
+	a3p_queue_message(A3P_DBG, "CH1 thread ended");
 	return 0;
 }
 
@@ -167,6 +177,7 @@ int a3p_stop_ch1_thread() {
 	gDoThreadCh1 = false;
 	// TODO: error msg
 	if (WaitForSingleObject(gThreadCh1, 2000) == WAIT_TIMEOUT) {
+		a3p_queue_message(A3P_WRN, "CH1 thread force terminated");
 		TerminateThread(gThreadCh1, 0);
 	}
 	CloseHandle(gThreadCh1);
@@ -182,12 +193,14 @@ int a3p_get_ch2(a3p_msg *msg) {
 	a3p_msg *front = gCh2InQueue.front();
 	*msg = *front;
 	gCh2InQueue.pop();
-	//delete front;
+	//delete front; // TODO
 
 	return 0;
 }
 
 DWORD WINAPI a3p_ch2_thread_funct(LPVOID lpParam) {
+
+	a3p_queue_message(A3P_DBG, "CH2 thread started");
 
 	a3p_msg *inmsg;
 	int ret;
@@ -205,9 +218,14 @@ DWORD WINAPI a3p_ch2_thread_funct(LPVOID lpParam) {
 			break;
 
 		}
+		else if (ret == -1) {
+			a3p_queue_message(A3P_ERR, "CH2 peer disconnected");
+			delete inmsg;
+			break;
+		}
 		else if (ret<0) {
 
-			a3p_queue_message(A3P_ERR, "CH2 w32_tcp_socket_read error");
+			a3p_queue_message(A3P_ERR, "CH2 w32_tcp_socket_read error: " + gCh2Sock->lasterr);
 			delete inmsg;
 			Sleep(100);
 
@@ -218,7 +236,7 @@ DWORD WINAPI a3p_ch2_thread_funct(LPVOID lpParam) {
 			gCh2InQueue.push(inmsg);
 		}
 	}
-
+	a3p_queue_message(A3P_DBG, "CH2 thread ended");
 	return 0;
 }
 
@@ -237,7 +255,7 @@ int a3p_stop_ch2_thread() {
 
 	if (WaitForSingleObject(gThreadCh2, 2000) == WAIT_TIMEOUT) {
 
-		// TODO: error msg
+		a3p_queue_message(A3P_WRN, "CH2 thread force terminated");
 		TerminateThread(gThreadCh2, 0);
 	}
 	CloseHandle(gThreadCh2);
@@ -248,6 +266,10 @@ int a3p_stop_ch2_thread() {
 
 // TODO: CHNUM CHCOUNT
 int a3p_3rd_mode(bool enable) {
+
+	a3p_queue_message(A3P_DBG, "a3p_3rd_mode");
+
+	if (!gCh1Sock) return -1;
 
 	bool success = false;
 
@@ -274,29 +296,34 @@ int a3p_3rd_mode(bool enable) {
 
 int a3p_init(const char* addr) {
 
+	a3p_queue_message(A3P_DBG, "a3p_init");
+
 	strncpy_s(gAddr, INET_ADDRSTRLEN, addr, INET_ADDRSTRLEN);
 
 	gDoThreadCh1 = false;
 	gDoThreadCh2 = false;
-	gCh1Sock = INVALID_SOCKET;
-	gCh2Sock = INVALID_SOCKET;
+	gCh1Sock = NULL;
+	gCh2Sock = NULL;
 
 	// TODO: read w32_tcp_socket errors
-	w32_tcp_socket_quiet(true);
+	// w32_tcp_socket_quiet(true);
 
 	return 0;
 }
 
 int a3p_connect(bool sst, bool sdu) {
 
+	a3p_queue_message(A3P_DBG, "a3p_connect");
+
 	a3p_disconnect();
 
 	// connect CH1
 	gCh1Sock = w32_tcp_socket_client_create(gAddr, A3P_CH1_PORT);
-	if (gCh1Sock == INVALID_SOCKET) {
+	if (!gCh1Sock->lasterr.empty()) {
 
 		// TODO: get w32_tcp_sock error
-		a3p_queue_message(A3P_ERR, "CH1 Failed opening socket");
+		a3p_queue_message(A3P_ERR, "CH1 Failed opening socket " + gCh1Sock->lasterr);
+		w32_tcp_socket_close(&gCh1Sock);
 		return -1;
 	}
 
@@ -305,10 +332,11 @@ int a3p_connect(bool sst, bool sdu) {
 
 	// connect CH2
 	gCh2Sock = w32_tcp_socket_client_create(gAddr, A3P_CH2_PORT);
-	if (gCh2Sock == INVALID_SOCKET) {
+	if (!gCh2Sock->lasterr.empty()) {
 
 		// TODO: get w32_tcp_sock error
-		a3p_queue_message(A3P_ERR, "CH2 failed opening socket");
+		a3p_queue_message(A3P_ERR, "CH2 failed opening socket " + gCh2Sock->lasterr);
+		w32_tcp_socket_close(&gCh1Sock);
 		return -1;
 	}
 
@@ -328,20 +356,27 @@ int a3p_connect(bool sst, bool sdu) {
 
 int a3p_disconnect() {
 
+	a3p_queue_message(A3P_DBG, "a3p_disconnect");
+
 	// stop threads
 	a3p_stop_ch2_thread();
 	a3p_stop_ch1_thread();
 
-	// close sockets
-	w32_tcp_socket_close(gCh1Sock);
-	w32_tcp_socket_close(gCh2Sock);
+	// disable 3rd party mode
+	if (gCh1Sock) {
+		if (a3p_3rd_mode(false) != 0)  a3p_queue_message(A3P_ERR, "Cannot disable 3rd party mode");
+	}
 
-	a3p_3rd_mode(false);
+	// close sockets
+	w32_tcp_socket_close(&gCh1Sock);
+	w32_tcp_socket_close(&gCh2Sock);
 
 	return 0;
 }
 
 int a3p_delete() {
+
+	a3p_queue_message(A3P_DBG, "a3p_delete");
 
 	a3p_disconnect();
 
