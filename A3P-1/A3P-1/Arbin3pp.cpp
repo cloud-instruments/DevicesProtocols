@@ -135,7 +135,7 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 			if (ret == 0) {
 
 				char buff[1];
-				if (w32_tcp_socket_read(gCh1Sock, buff, 1, A3P_ANS_TIMEOUT_S) == 1) {
+				if (w32_tcp_socket_read(gCh1Sock, buff, 1, (float)A3P_ANS_TIMEOUT_S) == 1) {
 					if (*buff != 0x06) {
 						a3p_queue_message(A3P_ERR, "CH1 unexpected answer for CMD_SET_SYSTEMTIME");
 					}

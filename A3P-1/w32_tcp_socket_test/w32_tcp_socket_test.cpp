@@ -30,7 +30,7 @@ bool show_recv(w32_socket *s, bool hex) {
 		if (hex) {
 
 			printf("received:\n");
-			for (unsigned int i = 0; i < ret; i++) {
+			for (int i = 0; i < ret; i++) {
 
 				printf("%02X ", (unsigned char)buff[i]);
 				if ((i + 1) % 8 == 0) printf("\n");

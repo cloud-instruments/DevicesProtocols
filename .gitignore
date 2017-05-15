@@ -9,3 +9,10 @@
 *.user
 /A3P-1/ipch
 /A3P-1/A3P-device-simulator/Debug
+
+A3P-1/A3P-1/Release/
+A3P-1/A3P-cmd-console/Release/
+A3P-1/A3P-device-simulator/Release/
+A3P-1/A3P-msg-view/Release/
+A3P-1/w32_tcp_socket_test/Release/
+

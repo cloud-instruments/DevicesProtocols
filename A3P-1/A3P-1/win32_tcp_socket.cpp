@@ -63,8 +63,8 @@ w32_socket *w32_tcp_socket_client_create(const char* addr, unsigned short port) 
 
 	// Connect to server
 	struct sockaddr_in server;
-	//server.sin_addr.s_addr = inet_addr(addr);  // XP only, now deprecated
-	inet_pton(AF_INET, addr, &(server.sin_addr));
+	server.sin_addr.s_addr = inet_addr(addr);  // XP only, now deprecated
+	//inet_pton(AF_INET, addr, &(server.sin_addr));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
 
@@ -114,7 +114,8 @@ w32_socket *w32_tcp_socket_server_wait(w32_socket *s, int max_queue){
 	s->lasterr.clear();
 
 	// mark socket as passive
-	if (max_queue != SOMAXCONN) max_queue = SOMAXCONN_HINT(max_queue);
+	//if (max_queue != SOMAXCONN) max_queue = SOMAXCONN_HINT(max_queue);
+	if (max_queue > SOMAXCONN) max_queue = SOMAXCONN;
 	if (listen(s->sock, max_queue) != 0) return NULL;
 
 	// actual connection from the client
