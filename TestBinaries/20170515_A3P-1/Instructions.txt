@@ -1,0 +1,107 @@
+1) Copy all folder content to the target host
+2) Open two console (cmd.exe)
+3) Move both cosoles to the test folder (cd /path/for/A3P-1)
+
+In all the test x.x.x.x is the IP address of the Arbin device
+The default is 192.168.1.1
+The connectd PC must have an address in the same subnet (es: 192.168.1.2)
+
+NOTE: if when running commands an SO alert box appears (missing dll....)
+run vc_redist.x64.exe (for 64 bits machine) or vc_redist.x86.exe (for 
+16 bits machine) and retry
+
+
+* TEST 0
+
+Execute 
+
+  ping 192.168.1.1
+
+the output can start with :
+
+  Pinging 192.168.1.1 with 32 bytes of data:
+  Request timed out.
+  
+or with:
+
+  Pinging 127.0.0.1 with 32 bytes of data:
+  Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
+
+In the first case both addresses (PC and Arbin device) and the phisical 
+connections must be checked (at the moment I have no informations about the 
+ping response of the Arbin device, it is possible that the connection is 
+ok even if the ping returns timeout, so, if all seems ok, proceed with tests
+even if test 0 failed)
+
+
+
+* TEST 1 ***********************************************************************
+
+1) In one console execute
+
+   w32_tcp_socket_test.exe -c x.x.x.x -k -b 5678
+   
+2) In the other console execute
+
+   w32_tcp_socket_test.exe -c x.x.x.x -k -b 5679
+   
+3) wait 1 min and then stop both executables ([CTRL][c])
+
+4) Save the output of the console in a txt file (or make a screenshot)
+
+NOTE: to avoid saving by hand you can run commands as:
+
+     w32_tcp_socket_test.exe -c x.x.x.x -k -b 5678 >> test1-5678.log 2>&1
+     w32_tcp_socket_test.exe -c x.x.x.x -k -b 5679 >> test1-5679.log 2>&1
+     
+     In this case you will not see any output on the console (wait 30s then hit [CTRL][c])
+  
+
+
+* TEST 2 ***********************************************************************
+
+1) In one console execute
+
+   w32_tcp_socket_test.exe -c x.x.x.x -b 5678
+   
+2) In the other console execute
+
+   w32_tcp_socket_test.exe -c x.x.x.x -b 5679
+   
+3) Wait 1 min and then stop ([CTRL][c])
+
+4) Save the output of the console in a txt file  (or make a screenshot)
+
+NOTE: to avoid saving by hand you can run commands as:
+
+     w32_tcp_socket_test.exe -c x.x.x.x -b 5678 >> test1-5678.log 2>&1
+     w32_tcp_socket_test.exe -c x.x.x.x -b 5679 >> test1-5679.log 2>&1
+     
+     In this case you will not see any output on the console (wait 30s then hit [CTRL][c])
+     
+     
+     
+* TEST 3 ***********************************************************************
+
+Only one console is required.
+
+1) Run:
+
+  A3P-1.exe x.x.x.x
+  
+2) Wait 1 min and the hit [CTRL][c]
+
+3) Run:
+
+  A3P-1.exe -1 x.x.x.x
+  
+4) Wait 1 min and the hit [CTRL][c]
+
+5) Run:
+
+  A3P-1.exe -2 x.x.x.x
+  
+6) Wait 1 min and the hit [CTRL][c]
+
+7) Collect result in the newly created file A3P-1.log
+
