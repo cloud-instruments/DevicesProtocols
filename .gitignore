@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/A3P-1/A3P-1/Debug
+/A3P-1/A3P-msg-view/Debug
+/A3P-1/w32_tcp_socket_test/Debug
+/A3P-1/Debug
+*.user
+/A3P-1/ipch
+/A3P-1/A3P-device-simulator/Debug
