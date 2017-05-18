@@ -8,7 +8,7 @@ The connectd PC must have an address in the same subnet (es: 192.168.1.2)
 
 NOTE: if when running commands an SO alert box appears (missing dll....)
 run vc_redist.x64.exe (for 64 bits machine) or vc_redist.x86.exe (for 
-16 bits machine) and retry
+32 bits machine) and retry
 
 
 * TEST 0
@@ -27,9 +27,9 @@ or with:
   Pinging 127.0.0.1 with 32 bytes of data:
   Reply from 127.0.0.1: bytes=32 time<1ms TTL=128
 
-In the first case both addresses (PC and Arbin device) and the phisical 
+In the first case both IP addresses (PC and Arbin device) and the phisical 
 connections must be checked (at the moment I have no informations about the 
-ping response of the Arbin device, it is possible that the connection is 
+ping response of the Arbin device, it is also possible that the connection is 
 ok even if the ping returns timeout, so, if all seems ok, proceed with tests
 even if test 0 failed)
 
