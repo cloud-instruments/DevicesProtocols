@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ciupClientTest", "ciupClien
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ciupServerTest", "ciupServerTest\ciupServerTest.vcxproj", "{5FF0A85D-8C17-491E-B87E-5AEFA97C6D41}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "w32_udp_socket_test", "w32_udp_socket_test\w32_udp_socket_test.vcxproj", "{DA0FBDE3-9746-4036-B35B-26109FFB9C00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{5FF0A85D-8C17-491E-B87E-5AEFA97C6D41}.Release|x64.Build.0 = Release|x64
 		{5FF0A85D-8C17-491E-B87E-5AEFA97C6D41}.Release|x86.ActiveCfg = Release|Win32
 		{5FF0A85D-8C17-491E-B87E-5AEFA97C6D41}.Release|x86.Build.0 = Release|Win32
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Debug|x64.ActiveCfg = Debug|x64
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Debug|x64.Build.0 = Debug|x64
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Debug|x86.ActiveCfg = Debug|Win32
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Debug|x86.Build.0 = Debug|Win32
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Release|x64.ActiveCfg = Release|x64
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Release|x64.Build.0 = Release|x64
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Release|x86.ActiveCfg = Release|Win32
+		{DA0FBDE3-9746-4036-B35B-26109FFB9C00}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
