@@ -8,6 +8,8 @@
 #define CIUP_MAX_RECEIVER (255)
 
 // callback definition
+// first param (const char *) : incoming message as json string
+// second param (int) id of reciver (as returned by ciupcStartReceiver
 typedef void (__stdcall *ciupDataCb)(const char*, int);
 
 // return 0 on success
@@ -16,7 +18,7 @@ __declspec(dllexport) int __stdcall ciupcGetServerInfo(
 	const char *addr,			// server IP address
 	unsigned short port,		// server UDP port
 	char* json,					// returned json message
-	int jsonlen                 // max size in char of returne json
+	int jsonlen                 // max size in char of returned json
 );
 
 // return >0 : ID of the started receiver

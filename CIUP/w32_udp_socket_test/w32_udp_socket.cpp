@@ -23,9 +23,9 @@ SOCKET w32_udp_socket_create(unsigned short port)
 
 		// initialize address struct
 		memset(&bindAddr, 0, sizeof(bindAddr));   // clear address struct
-		bindAddr.sin_family = PF_INET;          // address type is INET
-		bindAddr.sin_addr.s_addr = INADDR_ANY;  // address from (anywhere)
-		bindAddr.sin_port = htons(port);        // receive port
+		bindAddr.sin_family = PF_INET;            // address type is INET
+		bindAddr.sin_addr.s_addr = INADDR_ANY;    // address from (anywhere)
+		bindAddr.sin_port = htons(port);          // local port (0 is auto)
 
 		// associate socket with port
 		if ((bind(sock, (const struct sockaddr*)&bindAddr, sizeof(bindAddr))) < 0) {
@@ -39,25 +39,26 @@ SOCKET w32_udp_socket_create(unsigned short port)
 
 int w32_udp_socket_read(SOCKET sock, void* buff, size_t buff_size, char* fromAddr, unsigned short* fromPort, long msTimeout)
 {
-	int ret = UDP_SOCK_RET_SUCCESS;
+	int ret = UDP_SOCK_RET_FAIL;
+
+	// test read select
+	if (msTimeout > 0) {
+
+		fd_set readfds;
+		FD_ZERO(&readfds);
+		FD_SET(sock, &readfds);
+		timeval timeOut;
+		timeOut.tv_sec = (int)(msTimeout / 1000);
+		timeOut.tv_usec = (msTimeout % 1000) * 1000;
+		if (select(0, &readfds, NULL, NULL, &timeOut) <= 0) {
+			return UDP_SOCK_RET_TIMEOUT;
+		}
+	}
 
 	struct sockaddr_in recvAddr = {};
+	int aDim = sizeof(recvAddr);
+	ret = recvfrom(sock, (char*)buff, buff_size, 0, (struct sockaddr*)&recvAddr, &aDim);
 
-	timeval timeOut = {};
-	timeOut.tv_sec = (long)(msTimeout / 1000);
-	timeOut.tv_usec = (msTimeout%1000)*1000;
-	fd_set readfds = {};
-	FD_ZERO(&readfds);
-
-	// verify socket status
-	FD_SET(sock, &readfds);
-	select(0, &readfds, NULL, NULL, &timeOut);
-
-	// if socket has data
-	if (FD_ISSET(sock, &readfds)) {
-		int aDim = sizeof(recvAddr);
-		ret = recvfrom(sock, (char*)buff, buff_size, 0, (struct sockaddr*)&recvAddr, &aDim);
-	}
 	if ((ret > 0) && (fromAddr != NULL)) {
 		inet_ntop(AF_INET, &(recvAddr.sin_addr), fromAddr, INET_ADDRSTRLEN);
 		//strncpy_s(fromAddr, INET_ADDRSTRLEN, inet_ntoa(recvAddr.sin_addr), INET_ADDRSTRLEN);  // deprecated after XP

@@ -9,9 +9,22 @@
 
 #pragma once
 
+#include <Windows.h>
+
+// message buffer size given the payload size
+#define CIUP_MSG_SIZE(payload_size) ((payload_size)+9)
+
+// max message size at all
+#define CIUP_MAX_MSG_SIZE (2048)
+
+// timeout for answer read
+#define CIUP_ANS_TIMEOUT_MS 100
+
 // message types
 #define CIUP_MSG_SERVERINFO   ((BYTE)0x01)
 #define CIUP_MSG_DATAPOINT    ((BYTE)0x02)
+#define CIUP_MSG_START        ((BYTE)0x03)
+#define CIUP_MSG_STOP         ((BYTE)0x04)
 
 // server status 
 enum ciupStatus {
@@ -44,3 +57,11 @@ typedef struct {
 	float AHcap = 0;
 } ciupDataPoint;
 #pragma pack()
+
+// allocate and fill the message buffer
+// message biffer size will be CIUP_MSG_SIZE(payload_size)
+// WARN: message must be delete [] after use
+void *ciupBuildMessage(
+	BYTE type, 
+	void* payload=NULL, 
+	size_t payload_size=0);
