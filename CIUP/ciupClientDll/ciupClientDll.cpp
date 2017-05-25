@@ -7,10 +7,33 @@
 #include <vector>
 #include "../w32_udp_socket_test/w32_udp_socket.h"
 
+// error management ////////////////////////////////////////////////////////////
+
+// TODO: thread safe version
+
+std::string gLastErrDescr;
+int gLastErrCode;
+
+template< typename ... Args > void ciupSetError(int code, Args const& ... args)
+{
+	std::ostringstream stream;
+	using List = int[];
+	(void)List { 0, ((void)(stream << args), 0) ...};
+
+	gLastErrDescr = stream.str();
+	gLastErrCode = code;
+}
+
+__declspec(dllexport) int __stdcall ciupcGetLastError(char *descr, int maxlen) {
+
+	if (descr) strncpy_s(descr, maxlen, gLastErrDescr.c_str(), maxlen);
+	return gLastErrCode;
+}
+
 // json serialization functions ////////////////////////////////////////////////
 
 // convert ciupServerInfo to json string
-const char *ciupJsonSerialize(ciupServerInfo d) {
+void ciupJsonSerialize(ciupServerInfo d, std::string &ret) {
 
 	std::ostringstream oss;
 
@@ -18,11 +41,11 @@ const char *ciupJsonSerialize(ciupServerInfo d) {
 	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\",";
 	oss << "}";
 
-	return oss.str().c_str();
+	ret = oss.str();
 }
 
 // convert ciupDataPoint to json string
-const char *ciupJsonSerialize(ciupDataPoint d) {
+void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 
 	std::ostringstream oss;
 
@@ -33,44 +56,60 @@ const char *ciupJsonSerialize(ciupDataPoint d) {
 	oss << "\"AHcap\":\"" << d.AHcap << "\",";
 	oss << "}";
 
-	return oss.str().c_str();
+	ret = oss.str();
 }
 
 // convert payload of msg to jason string
-const char *ciupJsonSerialize(const BYTE* msg) {
+int ciupJsonSerialize(const BYTE* msg, std::string &res) {
+
+	int ret = CIUP_NO_ERR;
 
 	switch (*(msg + 4)) {
 
-	case CIUP_MSG_SERVERINFO:{
-			// TODO: check payload size == sizeof(d)
-
+		case CIUP_MSG_SERVERINFO: 
+		{
 			ciupServerInfo d;
-			memcpy_s(&d, sizeof(d), msg + 7, sizeof(d));
-			return ciupJsonSerialize(d);
+
+			// check payload size
+			if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
+				ciupSetError(CIUP_ERR_SIZE_MISMATCH, "Wrong payload size for MSG_SERVERINFO expected:", sizeof(d), " received:", CIUP_PAYLOAD_SIZE(msg));
+				ret = CIUP_ERR_SIZE_MISMATCH;
+			}
+
+			memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
+			ciupJsonSerialize(d, res);
 		}
 		break;
 
-	case CIUP_MSG_DATAPOINT: {
-			// TODO: check payload size == sizeof(d)
-
+		case CIUP_MSG_DATAPOINT: 
+		{
 			ciupDataPoint d;
-			memcpy_s(&d, sizeof(d), msg + 7, sizeof(d));
-			return ciupJsonSerialize(d);
 
+			// check payload size
+			if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
+				ciupSetError(CIUP_ERR_SIZE_MISMATCH, "Wrong payload size for MSG_DATAPOINT expected:", sizeof(d), " received:", CIUP_PAYLOAD_SIZE(msg));
+				ret = CIUP_ERR_SIZE_MISMATCH;
+			}
+
+			memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
+			ciupJsonSerialize(d,res);
 		}
 		break;
 
-	default:
-		// TODO: error control
-		break;
+		default:
+			ciupSetError(CIUP_ERR_UNKNOWN_TYPE, "Unknown message type:", *(msg + 4));
+			ret = CIUP_ERR_UNKNOWN_TYPE;
+			break;
 	}
 
-	return NULL;
+	return ret;
 }
 
 // message function ////////////////////////////////////////////////////////////
 
 int ciupSendCommand(SOCKET sock, BYTE command, const char *addr, unsigned short port, BYTE* ans, int ans_size) {
+
+	int ret = CIUP_NO_ERR;
 
 	// build command
 	void *cmd = ciupBuildMessage(command);
@@ -79,50 +118,65 @@ int ciupSendCommand(SOCKET sock, BYTE command, const char *addr, unsigned short 
 	w32_udp_socket_write(sock, cmd, CIUP_MSG_SIZE(0), addr, port);
 
 	// read answer
-	int ret = w32_udp_socket_read(sock, ans, ans_size, NULL, NULL, CIUP_ANS_TIMEOUT_MS);
+	int size = w32_udp_socket_read(sock, ans, ans_size, NULL, NULL, CIUP_ANS_TIMEOUT_MS);
 
-	// socket error - TODO: error descr
-	if (ret < 0) return ret;
+	if (size < 0) {
+		
+		ciupSetError(CIUP_ERR_SOCKET, "Socket err:", UDP_SOCK_RET_DESCR(size), "for cmd:", command);
+		ret = CIUP_ERR_SOCKET;
 
-	// unexpected size - TODO: error descr
-	else if (ret != ans_size) return -100;
+	}
+	else if (size != ans_size) {
 
-	// TODO: Control message syntax
+		ciupSetError(CIUP_ERR_SIZE_MISMATCH, "Wrong answer size for cmd:", command," expected:", ans_size, " received:", size);
+		ret = CIUP_ERR_SIZE_MISMATCH;
+	}
+	else if (size == CIUP_MSG_SIZE(0)){
+
+		// ack expected 
+		if (memcmp(ans, cmd, CIUP_MSG_SIZE(0))) {
+
+			ciupSetError(CIUP_ERR_ACK, "Wrong ack for cmd:", command);
+			ret = CIUP_ERR_ACK;
+		}
+	}
+	else {
+
+		if (ciupCheckMessageSyntax(ans, size) != CIUP_NO_ERR) {
+
+			ciupSetError(CIUP_ERR_SYNTAX, "Wrong answer syntax for cmd:", command);
+			ret = CIUP_ERR_SYNTAX;
+		}
+	}
 
 	delete[] cmd;
-	return 0;
+	return ret;
 }
 
 // to be used with commands that implies only ACK answer
 int ciupSendCommand(SOCKET sock, BYTE command, const char *addr, unsigned short port)
 {
 	BYTE ack[CIUP_MSG_SIZE(0)];
-
-	int ret = ciupSendCommand(sock, command, addr, port, ack, CIUP_MSG_SIZE(0));
-
-	// TODO: error descr
-	if (ret < 0) return ret;
-
-	// unexpected content - TODO: error descr
-	//else if (memcmp(ack, cmd, CIUP_MSG_SIZE(0))) return -200;
-
-	return 0;
+	return ciupSendCommand(sock, command, addr, port, ack, CIUP_MSG_SIZE(0));
 }
 
 // receiver thread /////////////////////////////////////////////////////////////
 
 typedef struct ciupThreadData_t{
+
 	int id;
-	ciupDataCb cb;
+	ciupDataCb dataCb;
+	ciupErrorCb errorCb;
 	bool run;
 	SOCKET sock;
 	std::string addr;
 	unsigned short port;
 	HANDLE hThread;
 
-	ciupThreadData_t(int i, ciupDataCb c, SOCKET s, const char* a, unsigned short p)
+	ciupThreadData_t(int i, ciupDataCb c, ciupErrorCb e, SOCKET s, const char* a, unsigned short p)
 		:id(i)
-		,cb(c)
+		,dataCb(c)
+		,errorCb(e)
 		,run(true)
 		,sock(s)
 		,addr(a)
@@ -168,15 +222,31 @@ DWORD WINAPI ciupThreadFunction(LPVOID lpParam) {
 
 	BYTE buff[CIUP_MAX_MSG_SIZE];
 	int ret;
+	std::string json;
 
 	while (d->run) {
 
 		ret = w32_udp_socket_read(d->sock, buff, CIUP_MAX_MSG_SIZE, NULL, NULL, 1000);
 		if (ret > 0) {
+
+			// TODO: ack as watchdog
 			
-			// TODO: check msg correctness
-			
-			d->cb(ciupJsonSerialize(buff), d->id);
+			if (ciupCheckMessageSyntax(buff, ret) == CIUP_NO_ERR) {
+
+				if (ciupJsonSerialize(buff, json) == CIUP_NO_ERR) {
+
+					// send message to data calback
+					d->dataCb(json.c_str(), d->id);
+				}
+				else {
+					d->errorCb(CIUP_ERR_SYNTAX, "Cannot serialize incoming message", d->id);
+				}
+			}
+			else {
+				
+				// send error to error callback
+				d->errorCb(CIUP_ERR_SYNTAX, "Syntax error in incoming message", d->id);
+			}
 		}
 	}
 
@@ -188,14 +258,12 @@ int ciupcStopReceiverWhithIndex(int index) {
 	ciupThreadData *d = ciupThreadDataList[index];
 	ciupThreadDataList.erase(ciupThreadDataList.begin() + index);
 
-	// TODO: error control
-	ciupSendCommand(d->sock, CIUP_MSG_STOP, d->addr.c_str(), d->port);
+	int ret = ciupSendCommand(d->sock, CIUP_MSG_STOP, d->addr.c_str(), d->port);
 
 	d->run = false;
 
 	// join thread
-	if (WaitForSingleObject(d->hThread, 2000) == WAIT_TIMEOUT) {
-		//std::cerr << "ch1Thread timeout" << std::endl;
+	if (WaitForSingleObject(d->hThread, CIUP_STOP_THREAD_TIMEOUT_MS) == WAIT_TIMEOUT) {
 		TerminateThread(d->hThread, 0);
 	}
 
@@ -203,47 +271,61 @@ int ciupcStopReceiverWhithIndex(int index) {
 	w32_wsa_cleanup();
 
 	delete d;
-	return 0;
+	return ret;
 }
 
 // exported functions //////////////////////////////////////////////////////////
 
-__declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigned short port, ciupDataCb cb) {
+__declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigned short port, ciupDataCb dataCb, ciupErrorCb errorCb) {
 
 	w32_wsa_startup();
 
-	ciupThreadData *d = new ciupThreadData(getFreeId(), cb, w32_udp_socket_create(0), addr, port);
+	int id = getFreeId();
 
-	// too much working receivers - TODO: error descr
-	if (d->id < 0) return -1;
+	// TODO: that's not thread safe
+	if (id < 0) {
+		ciupSetError(CIUP_ERR_MAX_RECEIVERS, "Cannot allocate more receviers");
+		return CIUP_ERR_MAX_RECEIVERS;
+	}
 
-	// failed open socket - TODO: error descr
-	if (d->sock <= 0) return -2;
+	SOCKET s = w32_udp_socket_create(0);
 
-	// TODO: error control
-	ciupSendCommand(d->sock, CIUP_MSG_STOP, addr, port);
+	if (s <= 0) {
+		ciupSetError(CIUP_ERR_SOCKET, "Cannot create socket");
+		return CIUP_ERR_SOCKET;
+	}
 
-	d->hThread = CreateThread(0, 0, ciupThreadFunction, d, 0, NULL);
+	int ret = ciupSendCommand(s, CIUP_MSG_START, addr, port);
+	if (ret != CIUP_NO_ERR) return ret;
+
+	ciupThreadData *d = new ciupThreadData(id, dataCb, errorCb, s, addr, port);
 	ciupThreadDataList.push_back(d);
+	d->hThread = CreateThread(0, 0, ciupThreadFunction, d, 0, NULL);
 
-	return d->id;
+	return id;
 }
 
 // return 0 on success
 __declspec(dllexport) int __stdcall ciupcStopReceiver(int id) {
 
-	// TODO: error description
+	int ret = CIUP_NO_ERR;
 
 	int index = findId(id);
-	if (index >= 0) ciupcStopReceiverWhithIndex(index);
-	return 0;
+	if (index >= 0) {
+		ret = ciupcStopReceiverWhithIndex(index);
+	}
+	else {		
+		ciupSetError(CIUP_ERR_ID, "Cannot stop receiver, id:", id, " not in list");
+		ret = CIUP_ERR_ID;
+	}
+	return ret;
 }
-
 
 __declspec(dllexport) void __stdcall ciupcStopAllReceivers() {
 
-	for (int i = ciupThreadDataList.size() - 1; i >= 0; i--)
+	for (int i = ciupThreadDataList.size() - 1; i >= 0; i--) {
 		ciupcStopReceiverWhithIndex(i);
+	}
 }
 
 __declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigned short port, char* json, int jsonmaxsize) {
@@ -251,15 +333,21 @@ __declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigne
 	SOCKET s = w32_udp_socket_create(0);
 
 	// TODO: error descr
-	if (s <= 0) return -2;
+	if (s <= 0) return CIUP_ERR_SOCKET;
 
 	BYTE ans[CIUP_MSG_SIZE(sizeof(ciupServerInfo))];
 
 	int ret = ciupSendCommand(s, CIUP_MSG_SERVERINFO, addr, port, ans, CIUP_MSG_SIZE(sizeof(ciupServerInfo)));
 
 	// TODO error descr
-	if (ret < 0) return ret;
+	if (ret == CIUP_NO_ERR) {
 
-	strncpy_s(json, jsonmaxsize, ciupJsonSerialize(ans), jsonmaxsize);
-	return 0;
+		std::string json_ret;
+		ret = ciupJsonSerialize(ans,json_ret);
+		if (ret == CIUP_NO_ERR) {
+			strncpy_s(json, jsonmaxsize, json_ret.c_str(), jsonmaxsize);
+		}
+	}
+
+	return ret;
 }

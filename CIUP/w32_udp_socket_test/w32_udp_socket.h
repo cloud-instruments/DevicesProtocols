@@ -14,6 +14,12 @@
 // Need to link with Ws2_32.lib
 #pragma comment(lib, "ws2_32.lib")
 
+// strings for error return description
+#define UDP_SOCK_RET_DESCR(n) (n==UDP_SOCK_RET_SUCCESS?"success":\
+                               (n==UDP_SOCK_RET_FAIL?"fail":\
+                                (n==UDP_SOCK_RET_TIMEOUT?"timeout":\
+                                 "unknown")))
+
 // return values
 #define UDP_SOCK_RET_SUCCESS  0
 #define UDP_SOCK_RET_FAIL    -1
