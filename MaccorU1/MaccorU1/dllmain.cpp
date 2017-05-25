@@ -24,14 +24,26 @@ streamlog *plog = NULL;
 // log TSpecData struct
 void TSpecDataLog(TSpecData* d) {
 
-	if (d == NULL) return;
-	*plog << "TSpecData Vmax:" << d->Vmax << " Vmin:" << d->Vmin << " ChI:" << d->ChI << " DisI:" << d->DisI << std::endl;
+	if (d == NULL) {
+		*plog << "TSpecData NULL" << std::endl;
+		return;
+	}
+
+	*plog << "TSpecData Vmax:" << d->Vmax 
+		<< " Vmin:" << d->Vmin 
+		<< " ChI:" << d->ChI 
+		<< " DisI:" << d->DisI 
+		<< std::endl;
 }
 
 // log TStatusData struct
 void TSStatusDataLog(TStatusData* d) {
 
-	if (d == NULL) return;
+	if (d == NULL) {
+		*plog << "TStatusData NULL" << std::endl;
+		return;
+	}
+
 	*plog << "TStatusData RF1:" << d->RF1 
 		<< " RF2:" << d->RF2
 		<< " Cycle:" << d->Cycle
@@ -63,7 +75,10 @@ void TSStatusDataLog(TStatusData* d) {
 // log TTestDataRevA struct
 void TTestDataRevALog(TTestDataRevA* d) {
 
-	if (d == NULL) return;
+	if (d == NULL) {
+		*plog << "TTestDataRevA NULL" << std::endl;
+		return;
+	}
 
 	*plog << "TTestDataRevA APIversion:" << d->APIversion
 		<< " SWversion:" << d->SWversion
@@ -89,7 +104,22 @@ void TTestDataRevALog(TTestDataRevA* d) {
 		float	Volume;					//Not used yet
 		float	Area;					//Not used yet
 		*/
+}
 
+// log TSpecData struct
+void TOutDataLog(TOutData* d) {
+
+	if (d == NULL) {
+		*plog << "TOutData NULL" << std::endl;
+		return;
+	}
+
+	*plog << "TSpecData Current:" << d->Current
+		<< " Flags:" << d->Flags
+		<< " Power:" << d->Power
+		<< " Resistance:" << d->Resistance
+		<< " Voltage:" << d->Voltage
+		<< std::endl;
 }
 
 // DLL entry and exit procedure
@@ -301,6 +331,7 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 	*plog << "GetSetpointRevA channel:" << channel << std::endl;
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
+	TOutDataLog(OutData);
 
 	// TODO: outdata
 	// The set points and flag are returned by setting the values in the OutData record
