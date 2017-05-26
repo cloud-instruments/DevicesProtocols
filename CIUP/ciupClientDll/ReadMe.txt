@@ -5,3 +5,5 @@
 ciupClientDll: client shared library for Cloud Instruments Unified Protocol
 
 To use it link to ciupClientDll.lib and include ciupClientDll.h and ciupCommon.h
+
+Exported functions are commented in .h files

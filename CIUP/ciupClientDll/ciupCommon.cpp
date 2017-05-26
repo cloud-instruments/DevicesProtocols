@@ -19,8 +19,8 @@ void *ciupBuildMessage(BYTE type, void* payload, size_t payload_size)
 	msg[2] = 'U';
 	msg[3] = 'P';
 	msg[4] = type;
-	msg[5] = payload_size / 256;
-	msg[6] = payload_size % 256;
+	msg[5] = (BYTE)(payload_size / 256);
+	msg[6] = (BYTE)(payload_size % 256);
 	if (payload && payload_size) {
 		memcpy_s(msg + CIUP_PAYLOAD_POS, payload_size, payload, payload_size);
 	}

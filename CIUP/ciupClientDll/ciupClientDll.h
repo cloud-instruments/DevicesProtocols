@@ -7,22 +7,21 @@
 // max number of receivers managed
 #define CIUP_MAX_RECEIVER (255)
 
-// ms timeout to stop threads
-#define CIUP_STOP_THREAD_TIMEOUT_MS 500
-
 // Callback definitions ////////////////////////////////////////////////////////
 
 // Data callback definition
 typedef void (__stdcall *ciupDataCb)(
 	const char*,         // incoming message as json string
-	int                // receiver id (as returned by ciupcStartReceiver)
+	int,                 // receiver id (as returned by ciupcStartReceiver)
+	const char*,         // sender IP address
+	unsigned short       // sender port
 );
 
 // Error callback definition
 typedef void(__stdcall *ciupErrorCb)(
 	int,               // error code
 	const char*,       // error description
-	int              // receiver id (as returned by ciupcStartReceiver)
+	int                // receiver id (as returned by ciupcStartReceiver)
 );
 
 // exported functions //////////////////////////////////////////////////////////

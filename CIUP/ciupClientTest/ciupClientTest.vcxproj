@@ -166,6 +166,11 @@
   <ItemGroup>
     <ResourceCompile Include="ciupClientTest.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CIUPclientDLL\CIUPclientDLL.vcxproj">
+      <Project>{d65637db-9539-4753-a306-e6ed25b5d537}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

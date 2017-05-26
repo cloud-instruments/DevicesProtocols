@@ -2,8 +2,8 @@
 // protocol definition:
 //  4 bytes: 'C','I','U','P'
 //  1 byte: MESSAGE TYPE (see #define CIUP_MSG_*)
-//  2 bytes: payload size (s) in bytes 
-//  s bytes: payload
+//  2 bytes: payload size (S) in bytes 
+//  S bytes: payload
 //  1 byte: checksum (sum of previous bytes)
 //  1 byte: checksum negated (0xFF-chk)
 
@@ -17,6 +17,9 @@
 // position of payload inside message
 #define CIUP_PAYLOAD_POS (7)
 
+// position of type inside message
+#define CIUP_TYPE_POS (4)
+
 // max message size at all
 #define CIUP_MAX_MSG_SIZE (2048)
 
@@ -25,6 +28,12 @@
 
 // timeout for answer read
 #define CIUP_ANS_TIMEOUT_MS 100
+
+// ms timeout to stop threads
+#define CIUP_STOP_THREAD_TIMEOUT_MS 500
+
+// after this limit the server will stop send
+#define CIUP_SERVER_ERROR_LIMIT 3
 
 // message types
 #define CIUP_MSG_SERVERINFO   ((BYTE)0x01)
@@ -42,26 +51,27 @@
 #define CIUP_ERR_ID             (-6)
 #define CIUP_ERR_MAX_RECEIVERS  (-7)
 
-
 // server status 
 enum ciupStatus {
-	UNKNOWN = 0,
-	IDLE    = 1,
-	WORKING = 2,
+	CIUP_ST_UNKNOWN = 0,
+	CIUP_ST_IDLE    = 1,
+	CIUP_ST_WORKING = 2,
 	
 	// TODO
 };
 
 // strings for ciupStatus description
-#define CIUP_STATUS_DESCR(n) (n==WORKING?"WRK":\
-                              (n==IDLE?"IDL":\
+#define CIUP_STATUS_DESCR(n) (n==CIUP_ST_WORKING?"WRK":\
+                              (n==CIUP_ST_IDLE?"IDL":\
                                "UKN"))
 
 // server infos packet
 #pragma pack(1)
 typedef struct {
-	ciupStatus status = UNKNOWN;
+	ciupStatus status = CIUP_ST_UNKNOWN;
+
 	// TODO
+
 } ciupServerInfo;
 #pragma pack()
 
@@ -72,6 +82,9 @@ typedef struct {
 	float Acurr = 0;
 	float Vdiff = 0;
 	float AHcap = 0;
+
+	// TODO
+
 } ciupDataPoint;
 #pragma pack()
 
@@ -88,3 +101,5 @@ int ciupCheckMessageSyntax(
 	void *msg,
 	size_t msg_size
 );
+
+// TODO: read answer function

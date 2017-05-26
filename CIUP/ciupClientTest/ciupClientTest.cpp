@@ -30,24 +30,24 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 	}
 }
 
-void __stdcall dataCb(const char* json, int recvId) {
+void __stdcall dataCb(const char* json, int recvId, const char *sendAddr, unsigned short sendPort) {
 
-	std::cout << recvId << ": " << json << std::endl;
-	if (plog) *plog << recvId << ": " << json << std::endl;
+	std::cout << recvId << "(" << sendAddr << ":" <<sendPort << "): " << json << std::endl;
+	if (plog) *plog << recvId << "(" << sendAddr << ":" << sendPort << "): " << json << std::endl;
 }
 
 void __stdcall errorCb(int errcode, const char* descr, int recvId) {
 
-	if (plog) *plog << recvId << ": " << "error " << errcode << " " << descr << streamlog::error << std::endl;
-	std::cerr << recvId << ": " << "error " << errcode << " " << descr << std::endl;
+	if (plog) *plog << recvId << ": " << "error:" << errcode << " " << descr << streamlog::error << std::endl;
+	std::cerr << recvId << ": " << "error:" << errcode << " " << descr << std::endl;
 }
 
 void printCiupError(const char* msg) {
 
 	char errdescr[1024];
 	int errcode = ciupcGetLastError(errdescr, 1024);
-	std::cerr << msg << " - " << errcode << " - " << errdescr << std::endl;
-	if (plog) *plog << msg << " - " << errcode << " - " << errdescr << streamlog::error << std::endl;
+	std::cerr << msg << " error:" << errcode << " " << errdescr << std::endl;
+	if (plog) *plog << msg << " error:" << errcode << " " << errdescr << streamlog::error << std::endl;
 }
 
 void print_usage(const char *exe) {
@@ -73,6 +73,7 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			logpath = argv[i + 1];
+			expected_argc += 2;
 		}
 	}
 

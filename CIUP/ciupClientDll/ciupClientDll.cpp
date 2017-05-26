@@ -64,7 +64,7 @@ int ciupJsonSerialize(const BYTE* msg, std::string &res) {
 
 	int ret = CIUP_NO_ERR;
 
-	switch (*(msg + 4)) {
+	switch (*(msg + CIUP_TYPE_POS)) {
 
 		case CIUP_MSG_SERVERINFO: 
 		{
@@ -97,7 +97,7 @@ int ciupJsonSerialize(const BYTE* msg, std::string &res) {
 		break;
 
 		default:
-			ciupSetError(CIUP_ERR_UNKNOWN_TYPE, "Unknown message type:", *(msg + 4));
+			ciupSetError(CIUP_ERR_UNKNOWN_TYPE, "Unknown message type:", *(msg + CIUP_TYPE_POS));
 			ret = CIUP_ERR_UNKNOWN_TYPE;
 			break;
 	}
@@ -115,37 +115,44 @@ int ciupSendCommand(SOCKET sock, BYTE command, const char *addr, unsigned short 
 	void *cmd = ciupBuildMessage(command);
 
 	// send command
-	w32_udp_socket_write(sock, cmd, CIUP_MSG_SIZE(0), addr, port);
+	int wsize = w32_udp_socket_write(sock, cmd, CIUP_MSG_SIZE(0), addr, port);
+	if ( wsize != CIUP_MSG_SIZE(0)) {
 
-	// read answer
-	int size = w32_udp_socket_read(sock, ans, ans_size, NULL, NULL, CIUP_ANS_TIMEOUT_MS);
-
-	if (size < 0) {
-		
-		ciupSetError(CIUP_ERR_SOCKET, "Socket err:", UDP_SOCK_RET_DESCR(size), "for cmd:", command);
+		ciupSetError(CIUP_ERR_SOCKET, "Socket write ret:", wsize, " for cmd:", (int)command);
 		ret = CIUP_ERR_SOCKET;
-
-	}
-	else if (size != ans_size) {
-
-		ciupSetError(CIUP_ERR_SIZE_MISMATCH, "Wrong answer size for cmd:", command," expected:", ans_size, " received:", size);
-		ret = CIUP_ERR_SIZE_MISMATCH;
-	}
-	else if (size == CIUP_MSG_SIZE(0)){
-
-		// ack expected 
-		if (memcmp(ans, cmd, CIUP_MSG_SIZE(0))) {
-
-			ciupSetError(CIUP_ERR_ACK, "Wrong ack for cmd:", command);
-			ret = CIUP_ERR_ACK;
-		}
 	}
 	else {
 
-		if (ciupCheckMessageSyntax(ans, size) != CIUP_NO_ERR) {
+		// read answer
+		int size = w32_udp_socket_read(sock, ans, ans_size, NULL, NULL, CIUP_ANS_TIMEOUT_MS);
 
-			ciupSetError(CIUP_ERR_SYNTAX, "Wrong answer syntax for cmd:", command);
-			ret = CIUP_ERR_SYNTAX;
+		if (size < 0) {
+
+			ciupSetError(CIUP_ERR_SOCKET, "Socket read answer err:", UDP_SOCK_RET_DESCR(size), " for cmd:", (int)command);
+			ret = CIUP_ERR_SOCKET;
+
+		}
+		else if (size != ans_size) {
+
+			ciupSetError(CIUP_ERR_SIZE_MISMATCH, "Wrong answer size for cmd:", (int)command, " expected:", ans_size, " received:", size);
+			ret = CIUP_ERR_SIZE_MISMATCH;
+		}
+		else if (size == CIUP_MSG_SIZE(0)) {
+
+			// ack expected 
+			if (memcmp(ans, cmd, CIUP_MSG_SIZE(0))) {
+
+				ciupSetError(CIUP_ERR_ACK, "Wrong ack for cmd:", (int)command);
+				ret = CIUP_ERR_ACK;
+			}
+		}
+		else {
+
+			if (ciupCheckMessageSyntax(ans, size) != CIUP_NO_ERR) {
+
+				ciupSetError(CIUP_ERR_SYNTAX, "Wrong answer syntax for cmd:", (int)command);
+				ret = CIUP_ERR_SYNTAX;
+			}
 		}
 	}
 
@@ -162,7 +169,7 @@ int ciupSendCommand(SOCKET sock, BYTE command, const char *addr, unsigned short 
 
 // receiver thread /////////////////////////////////////////////////////////////
 
-typedef struct ciupThreadData_t{
+typedef struct ciupReceiverData_t{
 
 	int id;
 	ciupDataCb dataCb;
@@ -173,7 +180,7 @@ typedef struct ciupThreadData_t{
 	unsigned short port;
 	HANDLE hThread;
 
-	ciupThreadData_t(int i, ciupDataCb c, ciupErrorCb e, SOCKET s, const char* a, unsigned short p)
+	ciupReceiverData_t(int i, ciupDataCb c, ciupErrorCb e, SOCKET s, const char* a, unsigned short p)
 		:id(i)
 		,dataCb(c)
 		,errorCb(e)
@@ -183,19 +190,23 @@ typedef struct ciupThreadData_t{
 		,port(p)
 	{}
 
-}ciupThreadData;
+}ciupReceiverData;
 
-std::vector<ciupThreadData*> ciupThreadDataList;
+std::vector<ciupReceiverData*> ciupReceiverList;
 
-// returns the first id not currently used in ciupThreadDataList
+// returns the first id not currently used in ciupReceiverList
 int getFreeId() {
 
-	if (ciupThreadDataList.size() >= CIUP_MAX_RECEIVER) return -1;
+	if (ciupReceiverList.size() >= CIUP_MAX_RECEIVER) return -1;
 
 	bool m[CIUP_MAX_RECEIVER];
 
-	for (std::vector<ciupThreadData*>::iterator it = ciupThreadDataList.begin(); it != ciupThreadDataList.end(); ++it) {
-		m[(*it)->id] = true;
+	for (int i = 0; i < CIUP_MAX_RECEIVER; i++) {
+		m[i] = false;
+	}
+
+	for (std::vector<ciupReceiverData*>::iterator it = ciupReceiverList.begin(); it != ciupReceiverList.end(); ++it) {
+		if ((*it)->id < CIUP_MAX_RECEIVER) m[(*it)->id] = true;
 	}
 
 	for (int i = 0; i < CIUP_MAX_RECEIVER; i++) {
@@ -205,38 +216,44 @@ int getFreeId() {
 	return -1;
 }
 
-// find the index in ciupThreadDataList with the required id
+// find the index in ciupReceiverList with the required id
 int findId(int id) {
 
-	for (std::vector<ciupThreadData*>::iterator it = ciupThreadDataList.begin(); it != ciupThreadDataList.end(); ++it) {
+	for (std::vector<ciupReceiverData*>::iterator it = ciupReceiverList.begin(); it != ciupReceiverList.end(); ++it) {
 		if ((*it)->id == id) {
-			return std::distance(ciupThreadDataList.begin(), it);
+			return std::distance(ciupReceiverList.begin(), it);
 		}
 	}
 	return -1;
 }
 
-DWORD WINAPI ciupThreadFunction(LPVOID lpParam) {
+DWORD WINAPI ciupReceiverThread(LPVOID lpParam) {
 
-	ciupThreadData *d = (ciupThreadData*)lpParam;
+	ciupReceiverData *d = (ciupReceiverData*)lpParam;
 
 	BYTE buff[CIUP_MAX_MSG_SIZE];
 	int ret;
 	std::string json;
 
+	char inAddr[INET_ADDRSTRLEN];
+	unsigned short inPort;
+
 	while (d->run) {
 
-		ret = w32_udp_socket_read(d->sock, buff, CIUP_MAX_MSG_SIZE, NULL, NULL, 1000);
+		ret = w32_udp_socket_read(d->sock, buff, CIUP_MAX_MSG_SIZE, inAddr, &inPort, 1000);
 		if (ret > 0) {
 
-			// TODO: ack as watchdog
-			
 			if (ciupCheckMessageSyntax(buff, ret) == CIUP_NO_ERR) {
 
 				if (ciupJsonSerialize(buff, json) == CIUP_NO_ERR) {
 
+					// send ack
+					void *ack = ciupBuildMessage(*(buff + CIUP_TYPE_POS));
+					w32_udp_socket_write(d->sock, ack, CIUP_MSG_SIZE(0), inAddr, inPort);
+					delete[] ack;
+					
 					// send message to data calback
-					d->dataCb(json.c_str(), d->id);
+					d->dataCb(json.c_str(), d->id, inAddr, inPort);
 				}
 				else {
 					d->errorCb(CIUP_ERR_SYNTAX, "Cannot serialize incoming message", d->id);
@@ -255,8 +272,8 @@ DWORD WINAPI ciupThreadFunction(LPVOID lpParam) {
 
 int ciupcStopReceiverWhithIndex(int index) {
 
-	ciupThreadData *d = ciupThreadDataList[index];
-	ciupThreadDataList.erase(ciupThreadDataList.begin() + index);
+	ciupReceiverData *d = ciupReceiverList[index];
+	ciupReceiverList.erase(ciupReceiverList.begin() + index);
 
 	int ret = ciupSendCommand(d->sock, CIUP_MSG_STOP, d->addr.c_str(), d->port);
 
@@ -284,7 +301,7 @@ __declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigne
 
 	// TODO: that's not thread safe
 	if (id < 0) {
-		ciupSetError(CIUP_ERR_MAX_RECEIVERS, "Cannot allocate more receviers");
+		ciupSetError(CIUP_ERR_MAX_RECEIVERS, "Cannot allocate more receivers");
 		return CIUP_ERR_MAX_RECEIVERS;
 	}
 
@@ -298,9 +315,9 @@ __declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigne
 	int ret = ciupSendCommand(s, CIUP_MSG_START, addr, port);
 	if (ret != CIUP_NO_ERR) return ret;
 
-	ciupThreadData *d = new ciupThreadData(id, dataCb, errorCb, s, addr, port);
-	ciupThreadDataList.push_back(d);
-	d->hThread = CreateThread(0, 0, ciupThreadFunction, d, 0, NULL);
+	ciupReceiverData *d = new ciupReceiverData(id, dataCb, errorCb, s, addr, port);
+	ciupReceiverList.push_back(d);
+	d->hThread = CreateThread(0, 0, ciupReceiverThread, d, 0, NULL);
 
 	return id;
 }
@@ -323,23 +340,25 @@ __declspec(dllexport) int __stdcall ciupcStopReceiver(int id) {
 
 __declspec(dllexport) void __stdcall ciupcStopAllReceivers() {
 
-	for (int i = ciupThreadDataList.size() - 1; i >= 0; i--) {
+	for (int i = ciupReceiverList.size() - 1; i >= 0; i--) {
 		ciupcStopReceiverWhithIndex(i);
 	}
 }
 
 __declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigned short port, char* json, int jsonmaxsize) {
 
+	w32_wsa_startup();
 	SOCKET s = w32_udp_socket_create(0);
 
-	// TODO: error descr
-	if (s <= 0) return CIUP_ERR_SOCKET;
+	if (s <= 0) {
+		ciupSetError(CIUP_ERR_SOCKET, "Cannot upen output socket");
+		return CIUP_ERR_SOCKET;
+	}
 
 	BYTE ans[CIUP_MSG_SIZE(sizeof(ciupServerInfo))];
 
 	int ret = ciupSendCommand(s, CIUP_MSG_SERVERINFO, addr, port, ans, CIUP_MSG_SIZE(sizeof(ciupServerInfo)));
 
-	// TODO error descr
 	if (ret == CIUP_NO_ERR) {
 
 		std::string json_ret;
@@ -348,6 +367,6 @@ __declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigne
 			strncpy_s(json, jsonmaxsize, json_ret.c_str(), jsonmaxsize);
 		}
 	}
-
+	w32_wsa_cleanup();
 	return ret;
 }
