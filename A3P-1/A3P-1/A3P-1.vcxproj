@@ -150,7 +150,7 @@
     <ClInclude Include="Arbin3pp.h" />
     <ClInclude Include="Arbin3ppMessages.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="w32_log.h" />
+    <ClInclude Include="streamlog.h" />
     <ClInclude Include="win32_tcp_socket.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

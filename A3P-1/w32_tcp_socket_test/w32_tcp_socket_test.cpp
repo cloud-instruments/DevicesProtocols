@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 				print_usage(argv[0]);
 				return -1;
 			}
-			server = argv[i + i];
+			server = argv[i + 1];
 			expected_argc += 2;
 		}
 

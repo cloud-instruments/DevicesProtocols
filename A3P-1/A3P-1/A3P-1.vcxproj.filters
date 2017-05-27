@@ -36,7 +36,7 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="w32_log.h">
+    <ClInclude Include="streamlog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
