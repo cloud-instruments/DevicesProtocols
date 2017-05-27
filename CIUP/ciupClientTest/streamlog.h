@@ -72,9 +72,19 @@ public:
 	
 		// if there's a message and level>=filter print message
 		if ( ( !str().empty()) && (m_current_level >= m_filter) ){
+			
+			//out << time(NULL) << " " << level_char(m_current_level) << " " << str();
 
-			// prefixes lines with a time stamp 
-			out << time(NULL) << " " << level_char(m_current_level) << " " << str();
+			// UTC formatted time
+			struct tm utctime;
+			time_t rawtime;
+			time(&rawtime);
+			gmtime_s(&utctime,&rawtime);
+			char ftime[64];
+			strftime(ftime, 64, "%F %T ", &utctime);
+
+			// prefixes lines with a time stamp and level char
+			out << ftime << level_char(m_current_level) << " " << str();
 			out.flush();
 		}
 		

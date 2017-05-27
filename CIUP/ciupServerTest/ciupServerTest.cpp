@@ -3,9 +3,15 @@
 #include "stdafx.h"
 #include "../w32_udp_socket_test/w32_udp_socket.h"
 #include "../ciupClientDll/ciupCommon.h"
+#include "../ciupClientTest/streamlog.h"
 #include "ciupServer.h"
 #include <iostream>
 #include <vector>
+
+// log globals
+std::string logpath;
+std::ofstream *logStream = NULL;
+streamlog *plog = NULL;
 
 #define SENDER_SLEEP_DEFAULT 1000
 int senderSleep = SENDER_SLEEP_DEFAULT;
@@ -47,7 +53,8 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
-		printf("[Ctrl]+C\n");
+		std::cout << "[Ctrl]+C" << std::endl;
+		if (plog) *plog << "[Ctrl]+C" << std::endl;
 		run = false;
 		return TRUE;
 	default:
@@ -79,6 +86,7 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 		delete[] msg;
 
 		std::cout << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << std::endl;
+		if (plog) *plog << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << std::endl;
 
 		// read ack as watchdog
 		size = w32_udp_socket_read(data->sock, ack, CIUP_MSG_SIZE(0), NULL, NULL, CIUP_ANS_TIMEOUT_MS);
@@ -86,16 +94,19 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 		if (size < 0) {
 
 			std::cerr << "T" << data->handle << " Socket read ack err:" << UDP_SOCK_RET_DESCR(size) << std::endl;
+			if (plog) *plog << "T" << data->handle << " Socket read ack err:" << UDP_SOCK_RET_DESCR(size) << streamlog::error << std::endl;
 			errcount++;
 		}
 		else if (size != CIUP_MSG_SIZE(0)) {
 
 			 std::cerr << "T" << data->handle << " Wrong ack size, expected:" << CIUP_MSG_SIZE(0) << " received:" << size << std::endl;
+			 if (plog) *plog << "T" << data->handle << " Wrong ack size, expected:" << CIUP_MSG_SIZE(0) << " received:" << size << streamlog::error << std::endl;
 			 errcount++;
 		}
 		else if (ciupCheckMessageSyntax(ack, size) != CIUP_NO_ERR) {
 
 			std::cerr << "T" << data->handle << " Wrong ack syntax" << std::endl;
+			if (plog) *plog << "T" << data->handle << " Wrong ack syntax" << streamlog::error << std::endl;
 			errcount++;
 		}
 		else {
@@ -104,6 +115,7 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 
 		if (errcount >= CIUP_SERVER_ERROR_LIMIT) {
 			std::cerr << "T" << data->handle << " Error limit reached, stopping sender" << std::endl;
+			if (plog) *plog << "T" << data->handle << " Error limit reached, stopping sender" << streamlog::error << std::endl;
 			data->run = false;
 		}
 
@@ -115,7 +127,8 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 
 int startSender(SOCKET s, const char* addr, unsigned short port) {
 
-	std::cout << "Starting sender for " << addr << ":" << port << std::endl;
+	std::cout << "Stopping sender for " << addr << ":" << port << std::endl;
+	if (plog) *plog << "Stopping sender for " << addr << ":" << port << std::endl;
 
 	void *ack = ciupBuildMessage(CIUP_MSG_START);
 	w32_udp_socket_write(s, ack, CIUP_MSG_SIZE(0), addr, port);
@@ -128,6 +141,13 @@ int startSender(SOCKET s, const char* addr, unsigned short port) {
 		ciupSenderData *d = new ciupSenderData(addr, port, w32_udp_socket_create(0));
 		ciupSenderList.push_back(d);
 		d->handle = CreateThread(0, 0, ciupSenderThread, d, 0, NULL);
+
+		std::cout << "Done" << std::endl;
+		if (plog) *plog << "Done" << std::endl;
+	}
+	else {
+		std::cerr << "Server yet on" << std::endl;
+		if (plog) *plog << "Server yet on" << streamlog::error << std::endl;
 	}
 
 	return CIUP_NO_ERR;
@@ -136,6 +156,7 @@ int startSender(SOCKET s, const char* addr, unsigned short port) {
 int stopSender(SOCKET s, const char* addr, unsigned short port) {
 
 	std::cout << "Stopping sender for " << addr << ":" << port << std::endl;
+	if (plog) *plog << "Stopping sender for " << addr << ":" << port << std::endl;
 
 	void *ack = ciupBuildMessage(CIUP_MSG_STOP);
 	w32_udp_socket_write(s, ack, CIUP_MSG_SIZE(0), addr, port);
@@ -160,9 +181,11 @@ int stopSender(SOCKET s, const char* addr, unsigned short port) {
 		delete d;
 
 		std::cout << "Done" << std::endl;
+		if (plog) *plog << "Done" << std::endl;
 	}
 	else {
 		std::cerr << "No server to stop" << std::endl;
+		if (plog) *plog << "No server to stop" << streamlog::error << std::endl;
 	}
 	return CIUP_NO_ERR;
 }
@@ -183,7 +206,8 @@ void print_usage(const char *exe) {
 
 	std::cerr << "Cloud Instruments Unified Protocol server test application" << std::endl;
 	std::cerr << "usage: " << exe << " port" << std::endl;
-	std::cerr << " -s ms : set sender sleep, default:" << SENDER_SLEEP_DEFAULT << "mS" << std::endl;
+	std::cerr << "  -s ms : set sender sleep, default:" << SENDER_SLEEP_DEFAULT << "mS" << std::endl;
+	std::cerr << "  -l path : enable logfile" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -203,12 +227,29 @@ int main(int argc, char **argv)
 			senderSleep = atoi(argv[i + 1]);
 			expected_argc += 2;
 		}
+
+		// enable log file
+		if (!strcmp(argv[i], "-l")) {
+
+			if (i >= argc - 1) {
+				print_usage(argv[0]);
+				return -1;
+			}
+			logpath = argv[i + 1];
+			expected_argc += 2;
+		}
 	}
 
 	// Validate the parameters
 	if (argc < expected_argc) {
 		print_usage(argv[0]);
 		return -1;
+	}
+
+	if (!logpath.empty()) {
+		// open log file
+		logStream = new std::ofstream(logpath, std::ios::app);
+		plog = new streamlog(*logStream, streamlog::debug);
 	}
 
 	w32_wsa_startup();
@@ -218,14 +259,16 @@ int main(int argc, char **argv)
 	SOCKET s = w32_udp_socket_create(port);
 	if (s <= 0) {
 		std::cerr << "Cannot open UDP port " << port << std::endl;
+		if (plog) *plog << "Cannot open UDP port " << port << streamlog::error << std::endl;
 		return -1;
 	}
 
-	std::cerr << "Listening un UDP port " << port << ", [ctrl][c] to stop" << std::endl;
+	std::cout << "Listening un UDP port " << port << ", [ctrl][c] to stop" << std::endl; 
+	if (plog) *plog << "Listening un UDP port " << port << ", [ctrl][c] to stop" << std::endl;
+
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
 	BYTE cmd[CIUP_MAX_MSG_SIZE];
-	void *ans;
 	char inAddr[INET_ADDRSTRLEN];
 	unsigned short inPort;
 
@@ -237,15 +280,20 @@ int main(int argc, char **argv)
 
 		if (size < 0) {
 
-			if (size != UDP_SOCK_RET_TIMEOUT) std::cerr << "Socket err:" << UDP_SOCK_RET_DESCR(size) << std::endl;
+			if (size != UDP_SOCK_RET_TIMEOUT) {
+				std::cerr << "Socket err:" << UDP_SOCK_RET_DESCR(size) << std::endl; 
+				if (plog) *plog << "Socket err:" << UDP_SOCK_RET_DESCR(size) << streamlog::error << std::endl;
+			}
 		}
 		else if (size != CIUP_MSG_SIZE(0)) {
 
 			std::cerr << "Wrong size for incoming cmd, expected:" << CIUP_MSG_SIZE(0) << " received:" << size << std::endl;
+			if (plog) *plog << "Wrong size for incoming cmd, expected:" << CIUP_MSG_SIZE(0) << " received:" << size << streamlog::error << std::endl;
 		}
 		else if (ciupCheckMessageSyntax(cmd,size)!=CIUP_NO_ERR){
 
 			std::cerr << "Wrong syntax for incoming cmd" << std::endl;
+			if (plog) *plog << "Wrong syntax for incoming cmd" << streamlog::error << std::endl;
 		}
 		else {
 
@@ -255,21 +303,25 @@ int main(int argc, char **argv)
 
 			case CIUP_MSG_SERVERINFO:
 				std::cout << "Received SERVERINFO command from" << inAddr << ":" << inPort << std::endl;
+				if (plog) *plog << "Received SERVERINFO command from" << inAddr << ":" << inPort << std::endl;
 				sendServerInfo(s, inAddr, inPort);
 				break;
 
 			case CIUP_MSG_START:
 				std::cout << "Received START command from " << inAddr << ":" << inPort << std::endl;
+				if (plog) *plog << "Received START command from " << inAddr << ":" << inPort << std::endl;
 				startSender(s, inAddr, inPort);
 				break;
 
 			case CIUP_MSG_STOP:
 				std::cout << "Received STOP command from " << inAddr << ":" << inPort << std::endl;
+				if (plog) *plog << "Received STOP command from " << inAddr << ":" << inPort << std::endl;
 				stopSender(s, inAddr, inPort);
 				break;
 
 			default:
 				std::cerr << "Unknown message type:" << *(cmd + CIUP_TYPE_POS) << std::endl;
+				if (plog) *plog << "Unknown message type:" << *(cmd + CIUP_TYPE_POS) << streamlog::error << std::endl;
 				break;
 			}
 		}

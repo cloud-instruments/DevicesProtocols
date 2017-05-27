@@ -21,7 +21,8 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
-		printf("[Ctrl]+C\n");
+		std::cout << "[Ctrl]+C" << std::endl;
+		if (plog) *plog << "[Ctrl]+C" << std::endl;
 		run = false;
 		return TRUE;
 	default:

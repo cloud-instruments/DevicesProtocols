@@ -38,7 +38,7 @@ void ciupJsonSerialize(ciupServerInfo d, std::string &ret) {
 	std::ostringstream oss;
 
 	oss << "{";
-	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\",";
+	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\"";
 	oss << "}";
 
 	ret = oss.str();
@@ -53,7 +53,7 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 	oss << "\"Ktemp\":\"" << d.Ktemp << "\",";
 	oss << "\"Acurr\":\"" << d.Acurr << "\",";
 	oss << "\"Vdiff\":\"" << d.Vdiff << "\",";
-	oss << "\"AHcap\":\"" << d.AHcap << "\",";
+	oss << "\"AHcap\":\"" << d.AHcap << "\"";
 	oss << "}";
 
 	ret = oss.str();
