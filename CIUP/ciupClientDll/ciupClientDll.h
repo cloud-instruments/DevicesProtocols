@@ -25,52 +25,58 @@ typedef void(__stdcall *ciupErrorCb)(
 );
 
 // exported functions //////////////////////////////////////////////////////////
+extern "C" {
 
-// return last error code
-__declspec(dllexport) int __stdcall ciupcGetLastError(
-	char *descr,   // if !NULL return laste error description
-	int maxlen     // max len in char for descr
-);
+	// return last error code
+	__declspec(dllexport) int __stdcall ciupcGetLastError(
+		char *descr,   // if !NULL return laste error description
+		int maxlen     // max len in char for descr
+	);
 
-// return 0 on success
-// return json answer in char *json
-__declspec(dllexport) int __stdcall ciupcGetServerInfo(
-	const char *addr,			// server IP address
-	unsigned short port,		// server UDP port
-	char* json,					// returned json message
-	int jsonlen                 // max size in char of returned json
-);
+	// return 0 on success
+	// return json answer in char *json
+	__declspec(dllexport) int __stdcall ciupcGetServerInfo(
+		const char *addr,			// server IP address
+		unsigned short port,		// server UDP port
+		char* json,					// returned json message
+		int jsonlen                 // max size in char of returned json
+	);
 
-// return >0 : ID of the started receiver
-// return <0 : error
-// WARN: cb should not be time consuming functions
-__declspec(dllexport) int __stdcall ciupcStartReceiver(
-	const char *addr,		 // server IP address
-	unsigned short port,	 // server UDP port
-	ciupDataCb dataCb,       // callback for incoming datapoints
-	ciupErrorCb errorCb      // callback for errors
-);
+	// return >0 : ID of the started receiver
+	// return <0 : error
+	// WARN: cb should not be time consuming functions
+	__declspec(dllexport) int __stdcall ciupcStartReceiver(
+		const char *addr,		 // server IP address
+		unsigned short port,	 // server UDP port
+		ciupDataCb dataCb,       // callback for incoming datapoints
+		ciupErrorCb errorCb      // callback for errors
+	);
 
-// return 0 on success
-__declspec(dllexport) int __stdcall ciupcStopReceiver(
-	int ID                // id of the receiver to be stopped (returned by ciupcStartReceiver)
-);
+	// return 0 on success
+	__declspec(dllexport) int __stdcall ciupcStopReceiver(
+		int ID                // id of the receiver to be stopped (returned by ciupcStartReceiver)
+	);
 
-// stop all
-__declspec(dllexport) void __stdcall ciupcStopAllReceivers();
-
+	// stop all
+	__declspec(dllexport) void __stdcall ciupcStopAllReceivers();
+}
 // NOTE for C# use /////////////////////////////////////////////////////////////
 
-// TO include dll function returning string
-// [DllImport("ciupClientDll.dll", CallingConvention = CallingConvention.Cdecl)
-// static extern int foo(StringBuilder str, int len);
+/*
+[DllImport("ciupClientDll.dll")]
+static extern int ciupcGetLastError(StringBuilder descr, int maxlen);
 
-// To use dll function returning string
-// StringBuilder sb = new StringBuilder(10);
-// foo(sb, sb.Capacity);
+[DllImport("ciupClientDll.dll")]
+static extern int ciupcGetServerInfo(String addr, ushort port, StringBuilder json, int jsonlen);
 
-// to manage data callback
-// delegate void MyCallback(string datapoint_json);
-// [DllImport("ciupClient.dll", CallingConvention = CallingConvention.Cdecl)]
-// static extern int startRecv([MarshalAs(UnmanagedType.FunctionPtr)]MyCallback func);
-// int ret = startRecv((x, y));
+delegate void ciupDataCb(String json, int id, String fromAddr, ushort fromPort);
+delegate void ciupErrorCb(int code, String description, int id);
+[DllImport("ciupClientDll.dll")]
+static extern int ciupcStartReceiver(String addr, ushort port, [MarshalAs(UnmanagedType.FunctionPtr)]ciupDataCb dataCb, [MarshalAs(UnmanagedType.FunctionPtr)]ciupErrorCb errorCb);
+
+[DllImport("ciupClientDll.dll")]
+static extern int ciupcStopReceiver(int ID);
+
+[DllImport("ciupClientDll.dll")]
+static extern void ciupcStopAllReceivers();
+*/

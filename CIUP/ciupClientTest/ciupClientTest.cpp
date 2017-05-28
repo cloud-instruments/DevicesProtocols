@@ -39,8 +39,8 @@ void __stdcall dataCb(const char* json, int recvId, const char *sendAddr, unsign
 
 void __stdcall errorCb(int errcode, const char* descr, int recvId) {
 
-	if (plog) *plog << recvId << ": " << "error:" << errcode << " " << descr << streamlog::error << std::endl;
 	std::cerr << recvId << ": " << "error:" << errcode << " " << descr << std::endl;
+	if (plog) *plog << recvId << ": " << "error:" << errcode << " " << descr << streamlog::error << std::endl;
 }
 
 void printCiupError(const char* msg) {
@@ -90,11 +90,11 @@ int main(int argc, char **argv)
 		plog = new streamlog(*logStream, streamlog::debug);
 	}
 
-	std::cout << "Started " << argv[0] << std::endl;
-	if (plog) *plog << "Started " << argv[0] << std::endl;
-
 	char *addr = argv[argc - 2];
 	unsigned short port = atoi(argv[argc - 1]);
+
+	std::cout << "Starting" << argv[0] << " for " << addr << ":" << port << std::endl;
+	if (plog) *plog << "Starting " << " for " << addr << ":" << port << argv[0] << std::endl;
 
 	char json[2048];
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
 	// sleep until CTRL-C
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
-	while (run) Sleep(1000);
+	while (run) Sleep(100);
 
 	ciupcStopAllReceivers();
 

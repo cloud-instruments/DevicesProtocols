@@ -24,12 +24,6 @@ template< typename ... Args > void ciupSetError(int code, Args const& ... args)
 	gLastErrCode = code;
 }
 
-__declspec(dllexport) int __stdcall ciupcGetLastError(char *descr, int maxlen) {
-
-	if (descr) strncpy_s(descr, maxlen, gLastErrDescr.c_str(), maxlen);
-	return gLastErrCode;
-}
-
 // json serialization functions ////////////////////////////////////////////////
 
 // convert ciupServerInfo to json string
@@ -293,80 +287,90 @@ int ciupcStopReceiverWhithIndex(int index) {
 
 // exported functions //////////////////////////////////////////////////////////
 
-__declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigned short port, ciupDataCb dataCb, ciupErrorCb errorCb) {
+extern "C" {
 
-	w32_wsa_startup();
+	__declspec(dllexport) int __stdcall ciupcGetLastError(char *descr, int maxlen) {
 
-	int id = getFreeId();
-
-	// TODO: that's not thread safe
-	if (id < 0) {
-		ciupSetError(CIUP_ERR_MAX_RECEIVERS, "Cannot allocate more receivers");
-		return CIUP_ERR_MAX_RECEIVERS;
+		if (descr) strncpy_s(descr, maxlen, gLastErrDescr.c_str(), maxlen);
+		return gLastErrCode;
 	}
 
-	SOCKET s = w32_udp_socket_create(0);
+	__declspec(dllexport) int __stdcall ciupcStartReceiver(const char *addr, unsigned short port, ciupDataCb dataCb, ciupErrorCb errorCb) {
 
-	if (s <= 0) {
-		ciupSetError(CIUP_ERR_SOCKET, "Cannot create socket");
-		return CIUP_ERR_SOCKET;
+		w32_wsa_startup();
+
+		int id = getFreeId();
+
+		// TODO: that's not thread safe
+		if (id < 0) {
+			ciupSetError(CIUP_ERR_MAX_RECEIVERS, "Cannot allocate more receivers");
+			return CIUP_ERR_MAX_RECEIVERS;
+		}
+
+		SOCKET s = w32_udp_socket_create(0);
+
+		if (s <= 0) {
+			ciupSetError(CIUP_ERR_SOCKET, "Cannot create socket");
+			return CIUP_ERR_SOCKET;
+		}
+
+		int ret = ciupSendCommand(s, CIUP_MSG_START, addr, port);
+		if (ret != CIUP_NO_ERR) return ret;
+
+		ciupReceiverData *d = new ciupReceiverData(id, dataCb, errorCb, s, addr, port);
+		ciupReceiverList.push_back(d);
+		d->hThread = CreateThread(0, 0, ciupReceiverThread, d, 0, NULL);
+
+		return id;
 	}
 
-	int ret = ciupSendCommand(s, CIUP_MSG_START, addr, port);
-	if (ret != CIUP_NO_ERR) return ret;
+	// return 0 on success
+	__declspec(dllexport) int __stdcall ciupcStopReceiver(int id) {
 
-	ciupReceiverData *d = new ciupReceiverData(id, dataCb, errorCb, s, addr, port);
-	ciupReceiverList.push_back(d);
-	d->hThread = CreateThread(0, 0, ciupReceiverThread, d, 0, NULL);
+		int ret = CIUP_NO_ERR;
 
-	return id;
-}
-
-// return 0 on success
-__declspec(dllexport) int __stdcall ciupcStopReceiver(int id) {
-
-	int ret = CIUP_NO_ERR;
-
-	int index = findId(id);
-	if (index >= 0) {
-		ret = ciupcStopReceiverWhithIndex(index);
-	}
-	else {		
-		ciupSetError(CIUP_ERR_ID, "Cannot stop receiver, id:", id, " not in list");
-		ret = CIUP_ERR_ID;
-	}
-	return ret;
-}
-
-__declspec(dllexport) void __stdcall ciupcStopAllReceivers() {
-
-	for (int i = ciupReceiverList.size() - 1; i >= 0; i--) {
-		ciupcStopReceiverWhithIndex(i);
-	}
-}
-
-__declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigned short port, char* json, int jsonmaxsize) {
-
-	w32_wsa_startup();
-	SOCKET s = w32_udp_socket_create(0);
-
-	if (s <= 0) {
-		ciupSetError(CIUP_ERR_SOCKET, "Cannot upen output socket");
-		return CIUP_ERR_SOCKET;
+		int index = findId(id);
+		if (index >= 0) {
+			ret = ciupcStopReceiverWhithIndex(index);
+		}
+		else {
+			ciupSetError(CIUP_ERR_ID, "Cannot stop receiver, id:", id, " not in list");
+			ret = CIUP_ERR_ID;
+		}
+		return ret;
 	}
 
-	BYTE ans[CIUP_MSG_SIZE(sizeof(ciupServerInfo))];
+	__declspec(dllexport) void __stdcall ciupcStopAllReceivers() {
 
-	int ret = ciupSendCommand(s, CIUP_MSG_SERVERINFO, addr, port, ans, CIUP_MSG_SIZE(sizeof(ciupServerInfo)));
-
-	if (ret == CIUP_NO_ERR) {
-
-		std::string json_ret;
-		ret = ciupJsonSerialize(ans,json_ret);
-		if (ret == CIUP_NO_ERR) {
-			strncpy_s(json, jsonmaxsize, json_ret.c_str(), jsonmaxsize);
+		for (int i = ciupReceiverList.size() - 1; i >= 0; i--) {
+			ciupcStopReceiverWhithIndex(i);
 		}
 	}
-	w32_wsa_cleanup();
-	return ret;
+
+	__declspec(dllexport) int __stdcall ciupcGetServerInfo(const char *addr, unsigned short port, char* json, int jsonmaxsize) {
+
+		w32_wsa_startup();
+		SOCKET s = w32_udp_socket_create(0);
+
+		if (s <= 0) {
+			ciupSetError(CIUP_ERR_SOCKET, "Cannot upen output socket");
+			return CIUP_ERR_SOCKET;
+		}
+
+		BYTE ans[CIUP_MSG_SIZE(sizeof(ciupServerInfo))];
+
+		int ret = ciupSendCommand(s, CIUP_MSG_SERVERINFO, addr, port, ans, CIUP_MSG_SIZE(sizeof(ciupServerInfo)));
+
+		if (ret == CIUP_NO_ERR) {
+
+			std::string json_ret;
+			ret = ciupJsonSerialize(ans, json_ret);
+			if (ret == CIUP_NO_ERR) {
+				strncpy_s(json, jsonmaxsize, json_ret.c_str(), jsonmaxsize);
+			}
+		}
+		w32_wsa_cleanup();
+		return ret;
+	}
+
 }
