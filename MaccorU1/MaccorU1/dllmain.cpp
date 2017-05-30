@@ -1,7 +1,20 @@
-// (c)2017 Matteo Lucarelli matteo.lucarelli@toptal.com
-// Date 20170519
 // dllmain.c : main functions for MaccorU1.dll
-////////////////////////////////////////////////////////////////////////////////
+
+// NOTES for Visual c++ 
+// To export undecorated names a .def is required:
+// LIBRARY MACCORU1
+// EXPORTS
+//     OnLoadRevA
+//     OnStepStartRevA
+//     OnStepEndRevA
+//     OnUnLoadRevA
+//     OnSuspendRevA
+//     OnResumeRevA
+//     GetSetpointRevA
+//
+// Export can be verified in Developer console with dumpbin.exe /EXPORTS
+//
+// Project -> properties -> linker -> debugging -> generate debug info = NO
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -9,6 +22,7 @@
 #include <commctrl.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <iomanip>
 
 #include "MaccorU1.h"
 #include "streamlog.h"
@@ -25,7 +39,7 @@ streamlog *plog = NULL;
 void TSpecDataLog(TSpecData* d) {
 
 	if (d == NULL) {
-		*plog << "TSpecData NULL" << std::endl;
+		*plog << "TSpecDataLog NULL" << streamlog::error << std::endl;
 		return;
 	}
 
@@ -33,19 +47,23 @@ void TSpecDataLog(TSpecData* d) {
 		<< " Vmin:" << d->Vmin 
 		<< " ChI:" << d->ChI 
 		<< " DisI:" << d->DisI 
-		<< std::endl;
+		<< streamlog::trace << std::endl;
+
+	for (int i = 0; i < sizeof(*d); ++i)
+		*plog << std::hex << std::setfill('0') << std::setw(2) << (int)*((unsigned char*)d+i) << " ";
+	*plog << std::endl;
 }
 
 // log TStatusData struct
 void TSStatusDataLog(TStatusData* d) {
 
 	if (d == NULL) {
-		*plog << "TStatusData NULL" << std::endl;
+		*plog << "TStatusData NULL" << streamlog::error << std::endl;
 		return;
 	}
 
-	*plog << "TStatusData RF1:" << d->RF1 
-		<< " RF2:" << d->RF2
+	*plog << "TStatusData RF1:" << (int)d->RF1 
+		<< " RF2:" << (int)d->RF2
 		<< " Cycle:" << d->Cycle
 		<< " Step:" << d->Step
 		<< " TestTime:" << d->TestTime
@@ -58,7 +76,7 @@ void TSStatusDataLog(TStatusData* d) {
 		<< " Energy:" << d->Energy
 		<< " HCEnergy:" << d->HCEnergy
 		<< " tFactor:" << d->tFactor
-		<< std::endl;
+		<< streamlog::trace << std::endl;
 
 		/*
 		float   AUXdata[48];			//Values of up to 48 assigned auxiliary inputs
@@ -70,13 +88,17 @@ void TSStatusDataLog(TStatusData* d) {
 		TSMBinfo SMBDataInfo[64];		//Specification of up to 64 assigned SMB registers. The SMB readings are stored in the StatusData.SMBdata
 		TSMBinfo SMBHdrInfo[64];		//Specification of up to 64 assigned SMB registers. The SMB readings are stored in the StatusData.SMBHdrData
 		*/
+
+	for (int i = 0; i < sizeof(*d); ++i)
+		*plog << std::hex << std::setfill('0') << std::setw(2) << (int)*((unsigned char*)d + i) << " ";
+	*plog << std::endl;
 }
 
 // log TTestDataRevA struct
 void TTestDataRevALog(TTestDataRevA* d) {
 
 	if (d == NULL) {
-		*plog << "TTestDataRevA NULL" << std::endl;
+		*plog << "TTestDataRevA NULL" << streamlog::error << std::endl;
 		return;
 	}
 
@@ -95,7 +117,7 @@ void TTestDataRevALog(TTestDataRevA* d) {
 		<< " StepNote:" << d->StepNote
 		<< " CRate:" << d->CRate
 		<< " Mass:" << d->Mass
-		<< std::endl;
+		<< streamlog::trace << std::endl;
 
 		/*
 		float   VRate;					//Not used yet
@@ -104,13 +126,17 @@ void TTestDataRevALog(TTestDataRevA* d) {
 		float	Volume;					//Not used yet
 		float	Area;					//Not used yet
 		*/
+
+	for (int i = 0; i < sizeof(*d); ++i)
+		*plog << std::hex << std::setfill('0') << std::setw(2) << (int)*((unsigned char*)d + i) << " ";
+	*plog << std::endl;
 }
 
 // log TSpecData struct
 void TOutDataLog(TOutData* d) {
 
 	if (d == NULL) {
-		*plog << "TOutData NULL" << std::endl;
+		*plog << "TOutData NULL" << streamlog::error << std::endl;
 		return;
 	}
 
@@ -119,7 +145,11 @@ void TOutDataLog(TOutData* d) {
 		<< " Power:" << d->Power
 		<< " Resistance:" << d->Resistance
 		<< " Voltage:" << d->Voltage
-		<< std::endl;
+		<< streamlog::trace << std::endl;
+
+	for (int i = 0; i < sizeof(*d); ++i)
+		*plog << std::hex << std::setfill('0') << std::setw(2) << (int)*((unsigned char*)d + i) << " ";
+	*plog << std::endl;
 }
 
 // DLL entry and exit procedure
@@ -141,23 +171,23 @@ BOOL APIENTRY DllMain(HINSTANCE hInstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			logStream = new std::ofstream(logpath, std::ios::app);
 			plog = new streamlog(*logStream, streamlog::debug);
 
-			*plog << "DLL_PROCESS_ATTACH, pid:" << ppid << std::endl;
+			*plog << "DLL_PROCESS_ATTACH, pid:" << ppid << streamlog::trace << std::endl;
 
             break;
 
         case DLL_THREAD_ATTACH:
 
-			*plog << "DLL_THREAD_ATTACH, tid:" << GetCurrentThreadId() << std::endl;
+			*plog << "DLL_THREAD_ATTACH, tid:" << GetCurrentThreadId() << streamlog::trace << std::endl;
             break;
 
         case DLL_THREAD_DETACH:
  
-			*plog << "DLL_THREAD_DETACH, tid:" << GetCurrentThreadId() << std::endl;
+			*plog << "DLL_THREAD_DETACH, tid:" << GetCurrentThreadId() << streamlog::trace << std::endl;
             break;
 
         case DLL_PROCESS_DETACH:
 
-			*plog << "DLL_PROCESS_DETACH" << std::endl;
+			*plog << "DLL_PROCESS_DETACH" << streamlog::trace << std::endl;
 			delete plog;
 			delete logStream;
             break;
@@ -175,7 +205,7 @@ __declspec(dllexport) int __stdcall OnLoadRevA(
 	PReportCallBack ReportCallBack,
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnLoadRevA, channel:"<< channel << std::endl;
+	*plog << "OnLoadRevA, channel:" << channel << streamlog::trace << std::endl;
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
 	TTestDataRevALog(TestData);
@@ -196,7 +226,7 @@ __declspec(dllexport) int __stdcall OnStepStartRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnStepStartRevA channel:" << channel <<" step:" << step << std::endl;
+	*plog << "OnStepStartRevA channel:" << channel <<" step:" << step << streamlog::trace << std::endl;
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
 	TTestDataRevALog(TestData);
@@ -216,7 +246,7 @@ __declspec(dllexport) int __stdcall OnStepEndRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnStepEndRevA channel:" << channel << " step:" << step << std::endl;
+	*plog << "OnStepEndRevA channel:" << channel << " step:" << step << streamlog::trace << std::endl;
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
 
@@ -232,7 +262,7 @@ __declspec(dllexport) int __stdcall OnUnLoadRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnUnLoadRevA channel:" << channel << std::endl;
+	*plog << "OnUnLoadRevA channel:" << channel << streamlog::trace << std::endl;
 
 	// TODO: callbacks
 
@@ -249,7 +279,7 @@ __declspec(dllexport) int __stdcall OnSuspendRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnSuspendRevA channel:" << channel << std::endl;
+	*plog << "OnSuspendRevA channel:" << channel << streamlog::trace << std::endl;
 
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
@@ -287,7 +317,7 @@ __declspec(dllexport) int __stdcall OnResumeRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "OnResumeRevA channel:" << channel << std::endl;
+	*plog << "OnResumeRevA channel:" << channel << streamlog::trace << std::endl;
 
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
@@ -328,13 +358,18 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 	PReportCallBack ReportCallBack, 
 	PWriteSMBCallBack WriteSMBCallBack )
 {
-	*plog << "GetSetpointRevA channel:" << channel << std::endl;
+	*plog << "GetSetpointRevA channel:" << channel << streamlog::trace << std::endl;
 	TSpecDataLog(SpecData);
 	TSStatusDataLog(StatusData);
 	TOutDataLog(OutData);
 
 	// TODO: outdata
 	// The set points and flag are returned by setting the values in the OutData record
+	// For now negative numbers means ignore
+	OutData->Current = -1;
+	OutData->Voltage= -1;
+	OutData->Power = -1;
+	OutData->Resistance= -1;
 	/*
 	typedef struct
 	{

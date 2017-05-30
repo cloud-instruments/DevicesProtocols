@@ -1,13 +1,9 @@
-// (c)2017 Matteo Lucarelli matteo.lucarelli@toptal.com
-// Date 20170519
 // header for MaccorU1.dll
 // Specifications from "Maccor automated test system manual" 2017 chm version
-////////////////////////////////////////////////////////////////////////////////
 
 typedef unsigned char  uint8;
 typedef unsigned short uint16;
 typedef unsigned int   uint32;
-
 
 // the key specification of the test channel
 #pragma pack(1)
@@ -66,7 +62,7 @@ typedef struct
 #pragma pack(1)
 typedef struct 
 {
-    uint8   RF1;					// The is the mode of the test step
+    uint8   RF1;					// This is the mode of the test step
     uint8   RF2;					// This the ES code of the test step
     int     Cycle;					// Cycle number
     int     Step;					// Test step (zero based)
@@ -85,8 +81,8 @@ typedef struct
     uint8   AUXinput[48];			// Auxiliary input channel
     uint16  AUXtype[48];			// Auxiliary input type: 1: Voltage; 2: Thermocple; 3: Thermistor; 4: Pressure; 5: Resistance;
     char    AUXunit[48][3];			// Auxiliary input engineering unit
-    uint8 SMBdata[512];				// 512 byte of SMB data
-    uint8 SMBHdrData[512];			// 512 byte of SMB header data
+    uint8   SMBdata[512];			// 512 byte of SMB data
+    uint8   SMBHdrData[512];		// 512 byte of SMB header data
     TSMBinfo SMBDataInfo[64];		// Specification of up to 64 assigned SMB registers. The SMB readings are stored in the StatusData.SMBdata
     TSMBinfo SMBHdrInfo[64];		// Specification of up to 64 assigned SMB registers. The SMB readings are stored in the StatusData.SMBHdrData
 } TStatusData;
