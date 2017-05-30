@@ -1,30 +1,10 @@
 ﻿using System;
 using System.Text;
 
-// required for DllImport
-using System.Runtime.InteropServices;
-
 namespace ciupClientTest_csc
 {
     class Program
     {
-        [DllImport("ciupClientDll.dll")]
-        static extern int ciupcGetLastError(StringBuilder descr, int maxlen);
-
-        [DllImport("ciupClientDll.dll")]
-        static extern int ciupcGetServerInfo(String addr, ushort port, StringBuilder json, int jsonlen);
-
-        delegate void ciupDataCbDelegate(String json, int id, String fromAddr, ushort fromPort);
-        delegate void ciupErrorCbDelegate(int code, String description, int id);
-        [DllImport("ciupClientDll.dll")]
-        static extern int ciupcStartReceiver(String addr, ushort port, [MarshalAs(UnmanagedType.FunctionPtr)]ciupDataCbDelegate dataCb, [MarshalAs(UnmanagedType.FunctionPtr)]ciupErrorCbDelegate errorCb);
-
-        [DllImport("ciupClientDll.dll")]
-        static extern int ciupcStopReceiver(int ID);
-
-        [DllImport("ciupClientDll.dll")]
-        static extern void ciupcStopAllReceivers();
-
         // callback for incoming data
         // json: incoming data in json string format
         // id: numeric id of the receiver (as returned by ciupcStartReceiver)
@@ -93,7 +73,7 @@ namespace ciupClientTest_csc
             Console.WriteLine("Starting client for {0}:{1}", addr, port);
 
             StringBuilder json = new StringBuilder(4096);
-            if (ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
+            if (PInvokeHelper.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
             {
                 printLog(logPath, "T", "server info: ", json.ToString());
                 Console.WriteLine("server info: {0}", json);
@@ -104,9 +84,9 @@ namespace ciupClientTest_csc
                 return;
             }
 
-            ciupDataCbDelegate pDataCb = new ciupDataCbDelegate(ciupDataCb);
-            ciupErrorCbDelegate pErrorCb = new ciupErrorCbDelegate(ciupErrorCb);
-            int id = ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
+            PInvokeHelper.ciupDataCbDelegate pDataCb = ciupDataCb;
+            PInvokeHelper.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
+            int id = PInvokeHelper.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
             if (id >= 0)
             {
                 printLog(logPath, "T", "Started receiver ", id.ToString());
@@ -129,7 +109,7 @@ namespace ciupClientTest_csc
             // sleep until ctrl-c
             while (run) System.Threading.Thread.Sleep(100);
 
-            ciupcStopAllReceivers();
+            PInvokeHelper.ciupcStopAllReceivers();
         }
 
         static void print_usage()
@@ -146,7 +126,7 @@ namespace ciupClientTest_csc
         static void printCiupError(String msg)
         {
             StringBuilder errdescr = new StringBuilder(4096);
-            int errcode = ciupcGetLastError(errdescr, errdescr.Capacity);
+            int errcode = PInvokeHelper.ciupcGetLastError(errdescr, errdescr.Capacity);
             Console.WriteLine("{0} error:{1} {2}", msg, errcode, errdescr);
         }
 
