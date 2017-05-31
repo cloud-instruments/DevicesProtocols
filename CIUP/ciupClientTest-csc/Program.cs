@@ -1,4 +1,6 @@
-﻿using System;
+﻿// test application for ciupClientDll
+
+using System;
 using System.Text;
 
 namespace ciupClientTest_csc
@@ -73,7 +75,7 @@ namespace ciupClientTest_csc
             Console.WriteLine("Starting client for {0}:{1}", addr, port);
 
             StringBuilder json = new StringBuilder(4096);
-            if (PInvokeHelper.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
+            if (SafeNativeMethods.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
             {
                 printLog(logPath, "T", "server info: ", json.ToString());
                 Console.WriteLine("server info: {0}", json);
@@ -84,15 +86,13 @@ namespace ciupClientTest_csc
                 return;
             }
 
-            PInvokeHelper.ciupDataCbDelegate pDataCb = ciupDataCb;
-            PInvokeHelper.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
-            int id = PInvokeHelper.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
-            if (id >= 0)
-            {
-                printLog(logPath, "T", "Started receiver ", id.ToString());
-                Console.WriteLine("Started receiver {0}",id);
-            }
-            else
+
+            printLog(logPath, "T", "Starting receiver ");
+            Console.WriteLine("Starting receiver {0}");
+            SafeNativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
+            SafeNativeMethods.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
+            int id = SafeNativeMethods.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
+            if (id < 0)
             {
                 printCiupError("ciupcStartReceiver");
                 return;
@@ -109,7 +109,7 @@ namespace ciupClientTest_csc
             // sleep until ctrl-c
             while (run) System.Threading.Thread.Sleep(100);
 
-            PInvokeHelper.ciupcStopAllReceivers();
+            SafeNativeMethods.ciupcStopAllReceivers();
         }
 
         static void print_usage()
@@ -119,14 +119,14 @@ namespace ciupClientTest_csc
             string name = System.IO.Path.GetFileName(codeBase);
 
             Console.WriteLine("Cloud Instruments Unified Protocol client test application");
-            Console.WriteLine("usage: [0] ip port", name);
+            Console.WriteLine("usage: ciupClientTest-csc ip port");
             Console.WriteLine("  -l path : enable logfile");
         }
 
         static void printCiupError(String msg)
         {
             StringBuilder errdescr = new StringBuilder(4096);
-            int errcode = PInvokeHelper.ciupcGetLastError(errdescr, errdescr.Capacity);
+            int errcode = SafeNativeMethods.ciupcGetLastError(errdescr, errdescr.Capacity);
             Console.WriteLine("{0} error:{1} {2}", msg, errcode, errdescr);
         }
 

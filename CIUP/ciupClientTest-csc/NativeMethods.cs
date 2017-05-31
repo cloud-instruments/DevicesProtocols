@@ -1,11 +1,17 @@
-﻿using System;
+﻿// P/Invoke import function for ciupClientDll to C#
+// NOTE for dll dependenciy inside visual studio
+// Add -> existing item -> CiupClientDll.dll
+// ciupClientDll.dll  ->properties : build action=none, copy to putput directory=if newer
+
+using System;
+
 // required for DllImport
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ciupClientTest_csc
 {
-    public static class PInvokeHelper
+    internal static class SafeNativeMethods
     {
         [DllImport("ciupClientDll.dll")]
         public static extern int ciupcGetLastError(StringBuilder descr, int maxlen);

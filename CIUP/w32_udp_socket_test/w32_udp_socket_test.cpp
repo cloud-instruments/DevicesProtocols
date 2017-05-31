@@ -1,5 +1,4 @@
-// w32_udp_socket_test.cpp : Defines the entry point for the console application.
-//
+// w32_udp_socket_test.cpp : test application for w32_udp_socket
 
 #include "stdafx.h"
 #include "w32_udp_socket.h"

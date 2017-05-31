@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "w32_udp_socket.h"
 
-void w32_wsa_startup() {
+int w32_wsa_startup() {
 	WSADATA socketInfo;
-	WSAStartup(MAKEWORD(2, 0), &socketInfo);
+	return WSAStartup(MAKEWORD(2, 0), &socketInfo);
 }
 
-void w32_wsa_cleanup() {
-	WSACleanup();
+int w32_wsa_cleanup() {
+	return WSACleanup();
 }
 
 SOCKET w32_udp_socket_create(unsigned short port)

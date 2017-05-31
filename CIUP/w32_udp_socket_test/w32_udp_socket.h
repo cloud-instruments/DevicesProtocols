@@ -1,10 +1,4 @@
-/* (C)2017 Matteo Lucarelli
-*
-*	Header file for UDP socket functions on win32
-*	Date: 23/05/2017
-*	Author: Matteo Lucarelli
-*
-*******************************************************************************/
+//	Header file for UDP socket functions on win32
 
 #pragma once
 
@@ -26,10 +20,10 @@
 #define UDP_SOCK_RET_TIMEOUT -2
 
 // startup must be called before any other operation
-void w32_wsa_startup();
+int w32_wsa_startup();
 
 // cleanup must be called after any other operation
-void w32_wsa_cleanup();
+int w32_wsa_cleanup();
 
 // create a UDP socket
 // return socket handle, <=0 on error

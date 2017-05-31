@@ -11,8 +11,8 @@
 
 #include <Windows.h>
 
-// message buffer size given the payload size
-#define CIUP_MSG_SIZE(payload_size) ((payload_size)+9)
+// message header size
+#define CIUP_MSG_HSIZE (9)
 
 // position of payload inside message
 #define CIUP_PAYLOAD_POS (7)
@@ -23,8 +23,14 @@
 // max message size at all
 #define CIUP_MAX_MSG_SIZE (2048)
 
+// max side of strings inside messages
+#define CIUP_MAX_STRING_SIZE (256)
+
+// message buffer size given the payload size
+#define CIUP_MSG_SIZE(payload_size) ((payload_size)+CIUP_MSG_HSIZE)
+
 // extract payload size from mmessage pointer
-#define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*(pmsg+5)*256) + (unsigned int)(*(pmsg+6)))
+#define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-2)*256) + (unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-1)))
 
 // timeout for answer read
 #define CIUP_ANS_TIMEOUT_MS 100
@@ -32,7 +38,7 @@
 // ms timeout to stop threads
 #define CIUP_STOP_THREAD_TIMEOUT_MS 500
 
-// after this limit the server will stop send
+// error count to stop server
 #define CIUP_SERVER_ERROR_LIMIT 3
 
 // message types
@@ -69,8 +75,10 @@ enum ciupStatus {
 #pragma pack(1)
 typedef struct {
 	ciupStatus status = CIUP_ST_UNKNOWN;
+	char id[CIUP_MAX_STRING_SIZE] = {};
 
 	// TODO
+
 
 } ciupServerInfo;
 #pragma pack()
@@ -82,6 +90,8 @@ typedef struct {
 	float Acurr = 0;
 	float Vdiff = 0;
 	float AHcap = 0;
+
+	USHORT counter;
 
 	// TODO
 

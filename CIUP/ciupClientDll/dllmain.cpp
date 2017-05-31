@@ -1,4 +1,5 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
+// dllmain.cpp : entry point for ciupClientDll
+
 #include "stdafx.h"
 
 #include "CIUPclientDLL.h"

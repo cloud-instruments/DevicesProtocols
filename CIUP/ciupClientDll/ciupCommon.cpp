@@ -1,4 +1,5 @@
-// ciupCommon.cpp : Defines the functions for DLL application.
+// ciupCommon.cpp : ciup common functions for both client and server
+
 #include "stdafx.h"
 
 #include "ciupCommon.h"

@@ -1,4 +1,5 @@
-// ciupClientDll.cpp : Defines the functions for DLL application.
+// ciupClientDll.cpp : dll for ciup client functions
+
 #include "stdafx.h"
 
 #include "ciupClientDll.h"
@@ -32,6 +33,7 @@ void ciupJsonSerialize(ciupServerInfo d, std::string &ret) {
 	std::ostringstream oss;
 
 	oss << "{";
+	oss << "\"id\":\"" << d.id << "\",";
 	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\"";
 	oss << "}";
 
@@ -44,6 +46,7 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 	std::ostringstream oss;
 
 	oss << "{";
+	oss << "\"counter\":\"" << d.counter << "\",";
 	oss << "\"Ktemp\":\"" << d.Ktemp << "\",";
 	oss << "\"Acurr\":\"" << d.Acurr << "\",";
 	oss << "\"Vdiff\":\"" << d.Vdiff << "\",";

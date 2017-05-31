@@ -73,9 +73,11 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 	BYTE ack[CIUP_MSG_SIZE(0)];
 	int errcount = 0;
 	int size;
+	USHORT counter = 0;
 
 	while (data->run) {
 
+		point.counter = counter;
 		point.Acurr = (float)rand() / RAND_MAX;
 		point.AHcap = (float)rand() / RAND_MAX;
 		point.Ktemp = (float)rand() / RAND_MAX;
@@ -85,8 +87,10 @@ DWORD WINAPI ciupSenderThread(LPVOID lpParam) {
 		wcount = w32_udp_socket_write(data->sock, msg, CIUP_MSG_SIZE(sizeof(point)), data->addr, data->port);
 		delete[] msg;
 
-		std::cout << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << std::endl;
-		if (plog) *plog << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << std::endl;
+		std::cout << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << " counter:" << counter << std::endl;
+		if (plog) *plog << "T" << data->handle << " Wrote " << wcount << " bytes to " << data->addr << ":" << data->port << " counter:" << counter << std::endl;
+
+		counter = ++counter%USHRT_MAX;
 
 		// read ack as watchdog
 		size = w32_udp_socket_read(data->sock, ack, CIUP_MSG_SIZE(0), NULL, NULL, CIUP_ANS_TIMEOUT_MS);
@@ -194,6 +198,7 @@ int sendServerInfo(SOCKET s, const char* addr, unsigned short port) {
 
 	ciupServerInfo d;
 	d.status = CIUP_ST_WORKING;
+	strncpy_s(d.id, "ciupServerTest", CIUP_MAX_STRING_SIZE);
 
 	void *ans = ciupBuildMessage(CIUP_MSG_SERVERINFO, &d, sizeof(d));
 	w32_udp_socket_write(s, ans, CIUP_MSG_SIZE(sizeof(d)), addr, port);

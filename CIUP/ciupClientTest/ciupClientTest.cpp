@@ -1,5 +1,4 @@
-// ciupClientTest.cpp : Defines the entry point for the console application.
-//
+// ciupClientTest.cpp : test application for ciupClientDll
 
 #include "stdafx.h"
 #include <iostream>
@@ -109,14 +108,11 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	std::cout << "starting receiver " << std::endl;
+	if (plog)  *plog << "starting receiver " << std::endl;
+
 	int id = ciupcStartReceiver(addr, port, dataCb, errorCb);
-	if ( id >= 0) {
-
-		std::cout << "started receiver " << id << std::endl;
-		if (plog)  *plog << "started receiver " << id << std::endl;
-
-	}
-	else {
+	if ( id < 0) {
 
 		printCiupError("ciupcStartReceiver");
 		return -1;
