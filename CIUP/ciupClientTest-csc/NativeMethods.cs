@@ -1,7 +1,4 @@
 ﻿// P/Invoke import function for ciupClientDll to C#
-// NOTE for dll dependenciy inside visual studio
-// Add -> existing item -> CiupClientDll.dll
-// ciupClientDll.dll  ->properties : build action=none, copy to putput directory=if newer
 
 using System;
 
@@ -11,7 +8,7 @@ using System.Text;
 
 namespace ciupClientTest_csc
 {
-    internal static class SafeNativeMethods
+    internal static class NativeMethods
     {
         [DllImport("ciupClientDll.dll")]
         public static extern int ciupcGetLastError(StringBuilder descr, int maxlen);
@@ -26,7 +23,7 @@ namespace ciupClientTest_csc
         public static extern int ciupcStartReceiver(String addr, ushort port, [MarshalAs(UnmanagedType.FunctionPtr)]ciupDataCbDelegate dataCb, [MarshalAs(UnmanagedType.FunctionPtr)]ciupErrorCbDelegate errorCb);
 
         [DllImport("ciupClientDll.dll")]
-        static extern int ciupcStopReceiver(int ID);
+        public static extern int ciupcStopReceiver(int ID);
 
         [DllImport("ciupClientDll.dll")]
         public static extern void ciupcStopAllReceivers();

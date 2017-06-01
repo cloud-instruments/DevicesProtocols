@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 			switch (*(cmd + CIUP_TYPE_POS)) {
 
 			case CIUP_MSG_SERVERINFO:
-				std::cout << "Received SERVERINFO command from" << inAddr << ":" << inPort << std::endl;
+				std::cout << "Received SERVERINFO command from " << inAddr << ":" << inPort << std::endl;
 				if (plog) *plog << "Received SERVERINFO command from" << inAddr << ":" << inPort << std::endl;
 				sendServerInfo(s, inAddr, inPort);
 				break;

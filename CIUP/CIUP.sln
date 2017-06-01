@@ -12,6 +12,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "w32_udp_socket_test", "w32_udp_socket_test\w32_udp_socket_test.vcxproj", "{DA0FBDE3-9746-4036-B35B-26109FFB9C00}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ciupClientTest-csc", "ciupClientTest-csc\ciupClientTest-csc.csproj", "{F0B07A34-5E82-4989-8234-7E1FA274CD4D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D65637DB-9539-4753-A306-E6ED25B5D537} = {D65637DB-9539-4753-A306-E6ED25B5D537}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

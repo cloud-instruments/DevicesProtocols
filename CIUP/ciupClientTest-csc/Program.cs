@@ -75,7 +75,7 @@ namespace ciupClientTest_csc
             Console.WriteLine("Starting client for {0}:{1}", addr, port);
 
             StringBuilder json = new StringBuilder(4096);
-            if (SafeNativeMethods.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
+            if (NativeMethods.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
             {
                 printLog(logPath, "T", "server info: ", json.ToString());
                 Console.WriteLine("server info: {0}", json);
@@ -86,12 +86,11 @@ namespace ciupClientTest_csc
                 return;
             }
 
-
             printLog(logPath, "T", "Starting receiver ");
             Console.WriteLine("Starting receiver {0}");
-            SafeNativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
-            SafeNativeMethods.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
-            int id = SafeNativeMethods.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
+            NativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
+            NativeMethods.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
+            int id = NativeMethods.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
             if (id < 0)
             {
                 printCiupError("ciupcStartReceiver");
@@ -109,7 +108,9 @@ namespace ciupClientTest_csc
             // sleep until ctrl-c
             while (run) System.Threading.Thread.Sleep(100);
 
-            SafeNativeMethods.ciupcStopAllReceivers();
+            NativeMethods.ciupcStopReceiver(id);
+            NativeMethods.ciupcStopAllReceivers();
+
         }
 
         static void print_usage()
@@ -126,14 +127,22 @@ namespace ciupClientTest_csc
         static void printCiupError(String msg)
         {
             StringBuilder errdescr = new StringBuilder(4096);
-            int errcode = SafeNativeMethods.ciupcGetLastError(errdescr, errdescr.Capacity);
+            int errcode = NativeMethods.ciupcGetLastError(errdescr, errdescr.Capacity);
             Console.WriteLine("{0} error:{1} {2}", msg, errcode, errdescr);
         }
 
         static void printLog(string path, string label, params string[] args)
         {
             if (path.Length == 0) return;
-            System.IO.File.AppendAllText(path, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " " + label + " " + String.Join("", args) + "\n");
+            try
+            {
+                System.IO.File.AppendAllText(path, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " " + label + " " + String.Join("", args) + "\n");
+            }
+            catch
+            {
+                Console.WriteLine("Cannot write to {0}", path);
+            }
         }
+           
     }
 }

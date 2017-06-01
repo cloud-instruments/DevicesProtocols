@@ -11,7 +11,7 @@
 
 #include <Windows.h>
 
-// message header size
+// message protocol size size
 #define CIUP_MSG_HSIZE (9)
 
 // position of payload inside message
