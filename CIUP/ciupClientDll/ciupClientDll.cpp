@@ -47,6 +47,8 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 
 	oss << "{";
 	oss << "\"counter\":\"" << d.counter << "\",";
+	oss << "\"channel\":\"" << d.channel << "\",";
+	oss << "\"Stime\":\"" << d.Stime << "\",";
 	oss << "\"Ktemp\":\"" << d.Ktemp << "\",";
 	oss << "\"Acurr\":\"" << d.Acurr << "\",";
 	oss << "\"Vdiff\":\"" << d.Vdiff << "\",";

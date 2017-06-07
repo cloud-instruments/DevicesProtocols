@@ -12,18 +12,18 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER SIMULATOR
-echo Executing ciupServer simulator on UDP port %port%
-start ..\Release\ciupServerTest.exe -l %dt%-ciupServer.log %port%
+echo Executing ciupServerEmulator on UDP port %port%
+start ..\Release\ciupServerEmulator.exe -l %dt%-ciupServerEmulator.log %port%
 
 : SLEEP A BIT
 @ping 127.0.0.1 -n 2 -w 1000 > nul
 
 : RUN C++ CLIENT SIMULATOR 
-echo Executing ciupClientSimulator connecting the server simulator
+echo Executing ciupClientTest Cpp version connecting the ciupServerEmulator
 start ..\Release\ciupClientTest.exe  -l %dt%-ciupClientCpp.log 127.0.0.1 %port%
 
 : RUN C# CLIENT SIMULATOR
-echo Executing ciupClientSimulator C# version connecting the server simulator
+echo Executing ciupClientTest C# version connecting the ciupServerEmulator
 start ..\Release\ciupClientTest-csc.exe -l %dt%-ciupClientCsc.log 127.0.0.1 %port%
 
 echo On the other consoles:

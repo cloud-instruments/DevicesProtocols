@@ -86,16 +86,32 @@ typedef struct {
 // data point packet
 #pragma pack(1)
 typedef struct {
-	float Ktemp = 0;
-	float Acurr = 0;
-	float Vdiff = 0;
-	float AHcap = 0;
 
-	USHORT counter;
+	USHORT counter;         // counter for messages sequence
+	USHORT channel;         // device channel of the data
+
+	float Stime = 0;        // data time in S
+	float Ktemp = 0;        // temperature in K
+	float Acurr = 0;        // current in A
+	float Vdiff = 0;        // Voltage in V
+	float AHcap = 0;        // capacity in Ah
 
 	// TODO
 
 } ciupDataPoint;
+#pragma pack()
+
+// WARN: must be a multiple of 8
+#define CIUP_CH_MAX_COUNT (128)
+
+// server setup packet
+#pragma pack(1)
+typedef struct {
+	
+	BYTE chFilter[CIUP_CH_MAX_COUNT / 8] = {};  // filter for channel (set using CIUP_CH define)
+	float dataFreqencyHz = 0;                   // frequency to read data (ignored if device-driven)
+
+} ciupServerSetup;
 #pragma pack()
 
 // allocate and fill the message buffer

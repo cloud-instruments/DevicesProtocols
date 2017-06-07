@@ -24,19 +24,16 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="ciupPipeServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\w32_udp_socket_test\w32_udp_socket.h">
+    <ClInclude Include="..\ciupServerEmulator\ciupServerCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\ciupClientDll\ciupCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ciupServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ciupClientTest\streamlog.h">
+    <ClInclude Include="..\w32_udp_socket_test\w32_udp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,22 +41,20 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ciupServerTest.cpp">
+    <ClCompile Include="ciupServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\w32_udp_socket_test\w32_udp_socket.cpp">
+    <ClCompile Include="ciupPipeServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ciupServerEmulator\ciupServerCommon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\ciupClientDll\ciupCommon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ciupServer.cpp">
+    <ClCompile Include="..\w32_udp_socket_test\w32_udp_socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="ciupServerTest.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>
