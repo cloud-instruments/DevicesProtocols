@@ -4,7 +4,7 @@
 SET port=10000
 
 echo Run CIUP server/client simulation test
-echo CIUP solution must be compiled in release mode
+echo CIUP solution must be compiled in release mode inside ..\Release folder
 
 : GET DATETIME STRING
 for /f "tokens=2,3,4 delims=/ " %%f in ('date /t') do set d=%%h%%g%%f

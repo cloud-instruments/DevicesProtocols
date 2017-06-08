@@ -2,12 +2,18 @@
 
 #include <vector>
 
-#include "../w32_udp_socket_test/w32_udp_socket.h"
+#include "../w32_tcp_socket_test/win32_tcp_socket.h"
 #include "../ciupClientDll/ciupCommon.h"
 #include "../ciupClientTest/streamlog.h"
-// 
 
-// TODO: move in ciupCommon
+#define CIUP_LOG_MAX_STORE (100)
+
+#define CIUP_POINT_MAX_STORE (1000)
+
+// enque new datapoint to be sent
+void ciupEnqueueDatapoint(ciupDataPoint &p);
+
+// log message
 typedef struct ciupLog_t {
 
 	std::string descr;
@@ -15,8 +21,10 @@ typedef struct ciupLog_t {
 
 }ciupLog;
 
-int ciupServerStart(unsigned short port);
-
-int ciupServerStop();
-
+// get log from FIFO 
+// return -1 when FIFO is empty
 int ciupGetLog(ciupLog *log);
+
+// start the server on UDP port
+int ciupServerStart(unsigned short port);
+int ciupServerStop();

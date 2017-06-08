@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by w32_udp_socket_test.rc
+// Used by w32_tcp_socket_test.rc
 
 // Next default values for new objects
 // 

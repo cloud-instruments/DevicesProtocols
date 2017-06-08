@@ -83,20 +83,36 @@ int main(int argc, char **argv)
 
 	unsigned short port = atoi(argv[argc - 1]);
 
+	// start the sender server
 	ciupServerStart(port);
 
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
-	// while run print logs
 	ciupLog log;
+	ciupDataPoint point;
+	USHORT counter = 0;
+	ULONGLONG sTime = GetTickCount64();
+
 	while (run) {
-		if (ciupGetLog(&log) == 0) {
+
+		while (ciupGetLog(&log) == 0) {
 			if (plog) *plog << log.descr << log.level << std::endl;
 			std::cout << log.descr << std::endl;
+			Sleep(1);
 		}
-		Sleep(10);
 
-		// TODO populate point queue
+		point.counter = counter;
+		point.channel = 0;
+		point.Stime = (float)(GetTickCount() - sTime) / 1000;
+		point.Acurr = (float)rand() / RAND_MAX;
+		point.AHcap = (float)rand() / RAND_MAX;
+		point.Ktemp = (float)rand() / RAND_MAX;
+		point.Vdiff = (float)rand() / RAND_MAX;
+
+		ciupEnqueueDatapoint(point);
+
+		counter = ++counter%USHRT_MAX;
+		Sleep(senderSleep);
 	}
 
 	ciupServerStop();

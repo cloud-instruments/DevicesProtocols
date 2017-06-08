@@ -6,26 +6,28 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
+// TODO: define msgtype constants
+
 namespace ciupClientTest_csc
 {
     internal static class NativeMethods
     {
-        [DllImport("ciupClientDll.dll")]
-        public static extern int ciupcGetLastError(StringBuilder descr, int maxlen);
-
-        [DllImport("ciupClientDll.dll")]
-        public static extern int ciupcGetServerInfo(String addr, ushort port, StringBuilder json, int jsonlen);
-
-        public delegate void ciupDataCbDelegate(String json, int id, String fromAddr, ushort fromPort);
-
+        public delegate void ciupDataCbDelegate(int msgtype, String json, int id);
         public delegate void ciupErrorCbDelegate(int code, String description, int id);
-        [DllImport("ciupClientDll.dll")]
-        public static extern int ciupcStartReceiver(String addr, ushort port, [MarshalAs(UnmanagedType.FunctionPtr)]ciupDataCbDelegate dataCb, [MarshalAs(UnmanagedType.FunctionPtr)]ciupErrorCbDelegate errorCb);
 
         [DllImport("ciupClientDll.dll")]
-        public static extern int ciupcStopReceiver(int ID);
+        public static extern int ciupcConnect(String addr, ushort port, [MarshalAs(UnmanagedType.FunctionPtr)]ciupDataCbDelegate dataCb, [MarshalAs(UnmanagedType.FunctionPtr)]ciupErrorCbDelegate errorCb);
 
         [DllImport("ciupClientDll.dll")]
-        public static extern void ciupcStopAllReceivers();
+        public static extern void ciupcInfo(int ID);
+
+        [DllImport("ciupClientDll.dll")]
+        public static extern void ciupcStart(int ID);
+
+        [DllImport("ciupClientDll.dll")]
+        public static extern void ciupcStop(int ID);
+
+        [DllImport("ciupClientDll.dll")]
+        public static extern void ciupcDisconnect(int ID);
     }
 }

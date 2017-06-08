@@ -30,24 +30,16 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 	}
 }
 
-void __stdcall dataCb(const char* json, int recvId, const char *sendAddr, unsigned short sendPort) {
+void __stdcall dataCb(int msgtype, const char* json, int recvId) {
 
-	std::cout << recvId << "(" << sendAddr << ":" <<sendPort << "): " << json << std::endl;
-	if (plog) *plog << recvId << "(" << sendAddr << ":" << sendPort << "): " << json << std::endl;
+	std::cout << recvId << ": (" << msgtype << ") " << json << std::endl;
+	if (plog) *plog << recvId << ": (" << msgtype << ") " << json << std::endl;
 }
 
 void __stdcall errorCb(int errcode, const char* descr, int recvId) {
 
-	std::cerr << recvId << ": " << "error:" << errcode << " " << descr << std::endl;
-	if (plog) *plog << recvId << ": " << "error:" << errcode << " " << descr << streamlog::error << std::endl;
-}
-
-void printCiupError(const char* msg) {
-
-	char errdescr[1024];
-	int errcode = ciupcGetLastError(errdescr, 1024);
-	std::cerr << msg << " error:" << errcode << " " << errdescr << std::endl;
-	if (plog) *plog << msg << " error:" << errcode << " " << errdescr << streamlog::error << std::endl;
+	std::cerr << recvId << ": " << "code:" << errcode << " " << descr << std::endl;
+	if (plog) *plog << recvId << ": " << "code:" << errcode << " " << descr << streamlog::error << std::endl;
 }
 
 void print_usage(const char *exe) {
@@ -92,37 +84,32 @@ int main(int argc, char **argv)
 	char *addr = argv[argc - 2];
 	unsigned short port = atoi(argv[argc - 1]);
 
-	std::cout << "Starting" << argv[0] << " for " << addr << ":" << port << std::endl;
-	if (plog) *plog << "Starting " << " for " << addr << ":" << port << argv[0] << std::endl;
+	std::cout << "Connecting " << addr << ":" << port << std::endl;
+	if (plog) *plog << "Connecting  " << addr << ":" << port << argv[0] << std::endl;
 
-	char json[2048];
+	int id = ciupcConnect(addr, port, dataCb, errorCb);
+	if (id < 0) {
 
-	if (ciupcGetServerInfo(addr, port, json, 2048) == CIUP_NO_ERR ) {
-
-		std::cout << "server info : " << json << std::endl;
-		if (plog)  *plog << "server info : " << json << std::endl;
-	}
-	else {
-
-		printCiupError("ciupcGetServerInfo");
+		std::cerr << "Cannot connect" << std::endl;
+		if (plog) *plog << "Cannot connect" << streamlog::error << std::endl;
 		return -1;
 	}
 
-	std::cout << "starting receiver " << std::endl;
-	if (plog)  *plog << "starting receiver " << std::endl;
-
-	int id = ciupcStartReceiver(addr, port, dataCb, errorCb);
-	if ( id < 0) {
-
-		printCiupError("ciupcStartReceiver");
-		return -1;
-	}
+	std::cout << "Connection id: " << id << std::endl;
+	if (plog) *plog << "Connection id: " << id << std::endl;
 
 	// sleep until CTRL-C
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
-	while (run) Sleep(100);
+	while (run) {
+		Sleep(5000);
 
-	ciupcStopAllReceivers();
+		//ciupcStop(id);
+		ciupcInfo(id);
+		//ciupcStart(id);
+	}
+
+	ciupcStop(id);
+	ciupcDisconnect(id);
 
 	if (plog) delete plog;
 	if (logStream) delete logStream;

@@ -146,7 +146,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\w32_udp_socket_test\w32_udp_socket.h" />
+    <ClInclude Include="..\w32_tcp_socket_test\win32_tcp_socket.h" />
     <ClInclude Include="ciupClientDll.h" />
     <ClInclude Include="ciupCommon.h" />
     <ClInclude Include="resource.h" />
@@ -154,7 +154,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\w32_udp_socket_test\w32_udp_socket.cpp" />
+    <ClCompile Include="..\w32_tcp_socket_test\win32_tcp_socket.cpp" />
     <ClCompile Include="ciupClientDll.cpp" />
     <ClCompile Include="ciupCommon.cpp" />
     <ClCompile Include="dllmain.cpp">

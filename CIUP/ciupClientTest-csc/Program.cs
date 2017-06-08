@@ -1,7 +1,6 @@
 ﻿// test application for ciupClientDll
 
 using System;
-using System.Text;
 
 namespace ciupClientTest_csc
 {
@@ -12,10 +11,10 @@ namespace ciupClientTest_csc
         // id: numeric id of the receiver (as returned by ciupcStartReceiver)
         // fromAddr: string IP of sender
         // fromPort: sender port
-        static void ciupDataCb(String json, int id, String fromAddr, ushort fromPort)
+        static void ciupDataCb(int msgtype, String json, int id)
         {
-            printLog(logPath, "T", id.ToString(),"(", fromAddr, ":", Convert.ToString(fromPort),": ",json);
-            Console.WriteLine("{0}({1}:{2}): {3}",id,fromAddr,fromPort,json);
+            printLog(logPath, "T", id.ToString(), " (", msgtype.ToString(), "): ", json);
+            Console.WriteLine("{0}({1}): {2}",id, msgtype, json);
         }
 
         // callback for errors
@@ -71,31 +70,21 @@ namespace ciupClientTest_csc
                 return;
             }
 
-            printLog(logPath, "T", "Starting client for ", addr, ":", Convert.ToString(port));
-            Console.WriteLine("Starting client for {0}:{1}", addr, port);
+            printLog(logPath, "T", "Connecting to ", addr, ":", Convert.ToString(port));
+            Console.WriteLine("Connecting to {0}:{1}", addr, port);
 
-            StringBuilder json = new StringBuilder(4096);
-            if (NativeMethods.ciupcGetServerInfo(addr, port, json, json.Capacity) == 0)
-            {
-                printLog(logPath, "T", "server info: ", json.ToString());
-                Console.WriteLine("server info: {0}", json);
-            }
-            else
-            {
-                printCiupError("ciupcGetServerInfo");
-                return;
-            }
-
-            printLog(logPath, "T", "Starting receiver ");
-            Console.WriteLine("Starting receiver {0}");
             NativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
             NativeMethods.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
-            int id = NativeMethods.ciupcStartReceiver(addr, port, pDataCb, pErrorCb);
+            int id = NativeMethods.ciupcConnect(addr, port, pDataCb, pErrorCb);
             if (id < 0)
             {
-                printCiupError("ciupcStartReceiver");
+                printLog(logPath, "E", "Cannot connect");
+                Console.WriteLine("Cannot connect");
                 return;
             }
+
+            printLog(logPath, "T", "Connection id: {0} ", id.ToString());
+            Console.WriteLine("Connection id: {0}", id);
 
             // intercept [CTRL][c] while sleeping
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
@@ -106,11 +95,14 @@ namespace ciupClientTest_csc
             };
 
             // sleep until ctrl-c
-            while (run) System.Threading.Thread.Sleep(100);
+            while (run)
+            {
+                System.Threading.Thread.Sleep(5000);
+                NativeMethods.ciupcInfo(id);
+            }
 
-            NativeMethods.ciupcStopReceiver(id);
-            NativeMethods.ciupcStopAllReceivers();
-
+            NativeMethods.ciupcStop(id);
+            NativeMethods.ciupcDisconnect(id);
         }
 
         static void print_usage()
@@ -122,13 +114,6 @@ namespace ciupClientTest_csc
             Console.WriteLine("Cloud Instruments Unified Protocol client test application");
             Console.WriteLine("usage: ciupClientTest-csc ip port");
             Console.WriteLine("  -l path : enable logfile");
-        }
-
-        static void printCiupError(String msg)
-        {
-            StringBuilder errdescr = new StringBuilder(4096);
-            int errcode = NativeMethods.ciupcGetLastError(errdescr, errdescr.Capacity);
-            Console.WriteLine("{0} error:{1} {2}", msg, errcode, errdescr);
         }
 
         static void printLog(string path, string label, params string[] args)

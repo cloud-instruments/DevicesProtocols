@@ -150,7 +150,7 @@
   <ItemGroup>
     <ClInclude Include="..\ciupClientDll\ciupCommon.h" />
     <ClInclude Include="..\ciupClientTest\streamlog.h" />
-    <ClInclude Include="..\w32_udp_socket_test\w32_udp_socket.h" />
+    <ClInclude Include="..\w32_tcp_socket_test\win32_tcp_socket.h" />
     <ClInclude Include="ciupServerCommon.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -158,7 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ciupClientDll\ciupCommon.cpp" />
-    <ClCompile Include="..\w32_udp_socket_test\w32_udp_socket.cpp" />
+    <ClCompile Include="..\w32_tcp_socket_test\win32_tcp_socket.cpp" />
     <ClCompile Include="ciupServerCommon.cpp" />
     <ClCompile Include="ciupServerEmulator.cpp" />
     <ClCompile Include="stdafx.cpp">

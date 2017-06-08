@@ -24,10 +24,10 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="w32_udp_socket.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="win32_tcp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,15 +35,15 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="w32_udp_socket_test.cpp">
+    <ClCompile Include="win32_tcp_socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="w32_udp_socket.cpp">
+    <ClCompile Include="w32_tcp_socket_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="w32_udp_socket_test.rc">
+    <ResourceCompile Include="w32_tcp_socket_test.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
