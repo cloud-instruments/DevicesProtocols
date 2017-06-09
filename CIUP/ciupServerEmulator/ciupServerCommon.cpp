@@ -12,7 +12,7 @@ struct {
 void ciupEnqueueDatapoint(ciupDataPoint &p)
 {
 	gPointBuffer.p[gPointBuffer.i] = p;
-	gPointBuffer.i = ++gPointBuffer.i % CIUP_POINT_MAX_STORE;
+	gPointBuffer.i = ++(gPointBuffer.i) % CIUP_POINT_MAX_STORE;
 }
 
 // LOGS MANAGEMENT /////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ void ciupEnqueueDatapoint(ciupDataPoint &p)
 std::queue<ciupLog> gLogQueue;
 
 // enqueue new log
-template< typename ... Args > void ciupQueueLog(streamlog::streamlog_level level, Args const& ... args)
+template< typename ... Args > void ciupQueueLog(streamlog::level level, Args const& ... args)
 {
 	std::ostringstream stream;
 	using List = int[];
@@ -46,24 +46,24 @@ int ciupGetLog(ciupLog *log)
 	return 0;
 }
 
-// SENDER THREAD ///////////////////////////////////////////////////////////////
+// CONNECTION THREAD ///////////////////////////////////////////////////////////////
 
 // Sender thread data struct
-typedef struct ciupSenderData_t {
+typedef struct ciupConnectionData_t {
 
 	w32_socket *sock;
 	bool run;
 	HANDLE hThread;
 
-	ciupSenderData_t(w32_socket *s) {
+	ciupConnectionData_t(w32_socket *s) {
 		sock = s;
 		run = true;
 	}
 
-}ciupSenderData;
+}ciupConnectionData;
 
 // list of running threads
-std::vector<ciupSenderData*> ciupSenderList;
+std::vector<ciupConnectionData*> ciupConnectionList;
 
 int sendServerInfo(w32_socket *s) {
 
@@ -82,9 +82,9 @@ int sendServerInfo(w32_socket *s) {
 	return ret;
 }
 
-DWORD WINAPI senderThread(LPVOID lpParam) {
+DWORD WINAPI connectionThread(LPVOID lpParam) {
 
-	ciupSenderData *data = (ciupSenderData*)lpParam;
+	ciupConnectionData *data = (ciupConnectionData*)lpParam;
 
 	ciupDataPoint point;
 
@@ -101,19 +101,18 @@ DWORD WINAPI senderThread(LPVOID lpParam) {
 	while (data->run) {
 
 		// read socket commands
-		ret = w32_tcp_socket_read(data->sock, cmd, CIUP_MAX_MSG_SIZE, 5);
+		ret = w32_tcp_socket_read(data->sock, cmd, CIUP_MAX_MSG_SIZE, 0);
 
 		if (ret == 0) {
 			// TIMEOUT: nothing to do
 		}
 		else if (ret < 0) {
 
-			ciupQueueLog(streamlog::error, "T", data->hThread, " w32_tcp_socket_read:", data->sock->lasterr);
+			ciupQueueLog(streamlog::error, "T", data->hThread, " w32_tcp_socket_read:", data->sock->lasterr.c_str());
 			rErr++;
 		}
 		else if (ret != CIUP_MSG_SIZE(0)) {
 
-			// TODO: verify for other type of commands
 			ciupQueueLog(streamlog::error, "T", data->hThread, " Wrong size for incoming cmd, expected:", CIUP_MSG_SIZE(0), " received:", ret);
 			rErr++;
 		}
@@ -164,7 +163,7 @@ DWORD WINAPI senderThread(LPVOID lpParam) {
 		}
 
 		if (rErr >= CIUP_SOCKET_ERROR_LIMIT) {
-			ciupQueueLog(streamlog::error, "T", data->hThread, " Read error limit reached, stopping sender");
+			ciupQueueLog(streamlog::error, "T", data->hThread, " Read error limit reached, closing connection");
 			doSend = false;
 			data->run = false;
 		}
@@ -185,7 +184,7 @@ DWORD WINAPI senderThread(LPVOID lpParam) {
 			else if (wcount < 0) {
 
 				// WRITE ERROR
-				ciupQueueLog(streamlog::error, "T", data->hThread, " w32_tcp_socket_write:", data->sock->lasterr);
+				ciupQueueLog(streamlog::error, "T", data->hThread, " w32_tcp_socket_write:", data->sock->lasterr.c_str());
 				wErr++;
 			}
 			else {
@@ -193,25 +192,24 @@ DWORD WINAPI senderThread(LPVOID lpParam) {
 				// TODO: control point sequence
 
 				// send success
-				ciupQueueLog(streamlog::debug, "T", data->hThread, " wrote counter:", gPointBuffer.p[qIndex].counter );
+				ciupQueueLog(streamlog::debug, "T", data->hThread, " wrote point counter:", gPointBuffer.p[qIndex].counter );
 				qIndex = ++qIndex % CIUP_POINT_MAX_STORE;
 				wErr = 0;
 			}
 
 			if (wErr >= CIUP_SOCKET_ERROR_LIMIT) {
-				ciupQueueLog(streamlog::error, "T", data->hThread, " Write error limit reached, stopping sender");
+				ciupQueueLog(streamlog::error, "T", data->hThread, " Write error limit reached, stopping send");
 				doSend = false;
 			}
 		}
-
-		Sleep(10); // TODO: define
+		Sleep(0);
 	}
 
 	w32_tcp_socket_close(&(data->sock));
 	return 0;
 }
 
-void stopAllSenders()
+void closeAllConnections()
 {
 
 	// TODO
@@ -224,6 +222,8 @@ HANDLE gServerThread = NULL;
 bool gServerRun = false;
 w32_socket *gServerSock = NULL;
 
+// listen to new connection on server port
+// run connectionThread on each new connection
 DWORD WINAPI serverThread(LPVOID lpParam) {
 
 	w32_socket *s = NULL;
@@ -236,16 +236,16 @@ DWORD WINAPI serverThread(LPVOID lpParam) {
 		if (s != NULL) {
 
 			// start new sender thread on connection, TODO: get address
-			ciupQueueLog(streamlog::trace, "Starting new sender");
-			ciupSenderData *d = new ciupSenderData(s);
-			ciupSenderList.push_back(d);
-			d->hThread = CreateThread(0, 0, senderThread, d, 0, NULL); // TODO: error control
+			ciupConnectionData *d = new ciupConnectionData(s);
+			ciupConnectionList.push_back(d);
+			d->hThread = CreateThread(0, 0, connectionThread, d, 0, NULL); // TODO: error control
+			ciupQueueLog(streamlog::trace, "Started new connection T", d->hThread);
 		}
 		else {
-			ciupQueueLog(streamlog::error, "w32_tcp_socket_server_wait: ", gServerSock->lasterr);
+			ciupQueueLog(streamlog::error, "w32_tcp_socket_server_wait: ", gServerSock->lasterr.c_str());
 		}
 
-		Sleep(10);
+		Sleep(100);
 	}
 
 	return 0;
@@ -274,7 +274,7 @@ int ciupServerStart(unsigned short port) {
 
 int ciupServerStop()
 {
-	stopAllSenders();
+	closeAllConnections();
 
 	// stop server thread
 	gServerRun = false;

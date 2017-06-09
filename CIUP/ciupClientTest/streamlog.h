@@ -32,7 +32,7 @@ public:
 		warning,
 		error,
 		none
-	} streamlog_level;
+	} level;
 
 public:
 
@@ -40,7 +40,7 @@ public:
 	// log_stream: std::ofstream of output file
 	// lfilter: log level filter (print only messages with level >= filter)
 	// ldefault: default level tu use if not specified
-	streamlog(std::ostream &log_stream, streamlog_level lfilter = debug, streamlog_level ldefault = debug):
+	streamlog(std::ostream &log_stream, level lfilter = debug, level ldefault = debug):
 		m_filter(lfilter),
 		m_current_level(ldefault),
 		m_default_level(ldefault),
@@ -55,13 +55,13 @@ public:
 	//   slog << streamlog::debug << "debug message" << std::endl;
 	//   slog << "error message" << streamlog::error << std::endl;
 	//   slog << streamlog::warning;
-	inline streamlog & operator<<(const streamlog_level & level) { m_current_level = level; return *this; }
+	inline streamlog & operator<<(const level & level) { m_current_level = level; return *this; }
 
 	// set/get filter and default levels
-	inline void set_filter(streamlog_level level) { m_filter = level; }
-	inline streamlog_level get_filter() const { return m_filter; }
-	inline void set_default(streamlog_level level) { m_default_level = level; }
-	inline streamlog_level get_default() const { return m_default_level; }
+	inline void set_filter(level level) { m_filter = level; }
+	inline level get_filter() const { return m_filter; }
+	inline void set_default(level level) { m_default_level = level; }
+	inline level get_default() const { return m_default_level; }
 	
 	// stubs for manipulators
 	typedef streamlog & (*streamlog_manip)(streamlog &);
@@ -100,7 +100,7 @@ public:
 	}
 	
 	// return a char representing level
-	char level_char(streamlog_level l) {
+	char level_char(level l) {
 		switch (l){
 			case error:return 'E';
 			case warning:return 'W';
@@ -112,9 +112,9 @@ public:
 	
 private:
 
-	streamlog_level m_filter;
-	streamlog_level m_current_level;
-	streamlog_level m_default_level;
+	level m_filter;
+	level m_current_level;
+	level m_default_level;
 	std::ostream & out;
 	
 };
@@ -122,14 +122,14 @@ private:
 // manipulators ////////////////////////////////////////////////////////////////
 
 // level is reset after each endl therefore it applies to the current log line only.
-struct __streamlog_level { streamlog::streamlog_level m_level; };
-inline __streamlog_level setlevel(streamlog::streamlog_level _level){
-	__streamlog_level level = { _level };
+struct __level { streamlog::level m_level; };
+inline __level setlevel(streamlog::level _level){
+	__level level = { _level };
 	return level;
 }
 
 // operator << to set line level
-inline streamlog & operator<<(streamlog & out, const __streamlog_level & level){
+inline streamlog & operator<<(streamlog & out, const __level & level){
 	out.set_filter(level.m_level);
 	return out;
 }

@@ -62,6 +62,12 @@ w32_socket *w32_tcp_socket_client_create(const char* addr, unsigned short port) 
 		return s;
 	}
 
+
+	/*int flag = 1;
+	setsockopt(s->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int));
+	int sendbuff = 0;
+	setsockopt(s->sock, SOL_SOCKET, SO_SNDBUF, (char*)&sendbuff, sizeof(int));*/
+
 	// Connect to server
 	struct sockaddr_in server;
 	//server.sin_addr.s_addr = inet_addr(addr);  // XP only, now deprecated
@@ -114,6 +120,12 @@ int w32_tcp_socket_keepalive(w32_socket *s, float timeout_s, float interval_s)
 w32_socket *w32_tcp_socket_server_wait(w32_socket *s, int max_queue){
 
 	s->lasterr.clear();
+
+	/*int flag = 1;
+	setsockopt(s->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int));
+	int sendbuff = 0;
+	setsockopt(s->sock, SOL_SOCKET, SO_SNDBUF, (char*)&sendbuff, sizeof(int));*/
+
 
 	// mark socket as passive
 	//if (max_queue != SOMAXCONN) max_queue = SOMAXCONN_HINT(max_queue);

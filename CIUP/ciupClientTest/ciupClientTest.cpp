@@ -9,6 +9,7 @@
 #include "../ciupClientDll/ciupClientDll.h"
 
 bool run = true;
+bool performance = false;
 
 // log globals
 std::string logpath;
@@ -30,29 +31,55 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 	}
 }
 
-void __stdcall dataCb(int msgtype, const char* json, int recvId) {
+void __stdcall dataCb(int msgtype, const char* json, int connId) {
 
-	std::cout << recvId << ": (" << msgtype << ") " << json << std::endl;
-	if (plog) *plog << recvId << ": (" << msgtype << ") " << json << std::endl;
+	static DWORD tPrev = GetTickCount();
+	static DWORD cPrev = 0;
+	static DWORD msgcount = 0;
+
+	if (performance) {
+
+		DWORD tNow = GetTickCount();
+		msgcount++;
+
+		if (tNow - tPrev > 1000) {
+
+			// FIXME: don't care overflow
+			
+			double mS = (msgcount - cPrev) / ((tNow - tPrev) / 1000.0);
+
+			std::cout << connId << ": " << mS << " msg/s " << " (" << msgcount - cPrev << "msg in " << tNow - tPrev << " mS)" << std::endl;
+			if (plog) *plog << connId << ": " << mS << " msg/s " << " (" << msgcount - cPrev << "msg in " << tNow - tPrev << " mS)" << streamlog::trace << std::endl;
+
+			tPrev = GetTickCount();
+			cPrev = msgcount;
+		}
+	}
+	else {
+		std::cout << connId << ": (" << msgtype << ") " << json << std::endl;
+		if (plog) *plog << connId << ": (" << msgtype << ") " << json << streamlog::trace << std::endl;
+	}
 }
 
-void __stdcall errorCb(int errcode, const char* descr, int recvId) {
+void __stdcall errorCb(int errcode, const char* descr, int connId) {
 
-	std::cerr << recvId << ": " << "code:" << errcode << " " << descr << std::endl;
-	if (plog) *plog << recvId << ": " << "code:" << errcode << " " << descr << streamlog::error << std::endl;
+	std::cerr << connId << ": " << "code:" << errcode << " " << descr << std::endl;
+	if (plog) *plog << connId << ": " << "code:" << errcode << " " << descr << streamlog::error << std::endl;
 }
 
 void print_usage(const char *exe) {
 
 	std::cerr << "Cloud Instruments Unified Protocol client test application" << std::endl;
 	std::cerr << "usage: " << exe << " ip port" << std::endl;
-	std::cerr << "  -l path : enable logfile" << std::endl;
+	std::cerr << "  -l PATH : enable logfile" << std::endl;
+	std::cerr << "  -f X : filter logfile (E:errors, W:warnings, T:trace, D:debug)" << std::endl;
+	std::cerr << "  -p : performance mode" << std::endl;
 }
 
 int main(int argc, char **argv)
 {
 	int expected_argc = 3;
-	// TODO: log
+	streamlog::level l = streamlog::debug;
 
 	// parse arguments
 	for (int i = 1; i < argc; i++) {
@@ -67,6 +94,39 @@ int main(int argc, char **argv)
 			logpath = argv[i + 1];
 			expected_argc += 2;
 		}
+
+		// set loglevel filter
+		if (!strcmp(argv[i], "-f")) {
+
+			if (i >= argc - 1) {
+				print_usage(argv[0]);
+				return -1;
+			}
+			switch (*(argv[i + 1])) {
+			case 'E':
+				l = streamlog::error;
+				break;
+			case 'W':
+				l = streamlog::warning;
+				break;
+			case 'T':
+				l = streamlog::trace;
+				break;
+			case 'D':
+				l = streamlog::debug;
+				break;
+			default:
+				print_usage(argv[0]);
+				return -1;
+			}
+			expected_argc += 2;
+		}
+
+		// performance mode
+		if (!strcmp(argv[i], "-p")) {
+			performance = true;
+			expected_argc += 1;
+		}
 	}
 
 	// Validate the parameters
@@ -78,14 +138,14 @@ int main(int argc, char **argv)
 	if (!logpath.empty()) {
 		// open log file
 		logStream = new std::ofstream(logpath, std::ios::app);
-		plog = new streamlog(*logStream, streamlog::debug);
+		plog = new streamlog(*logStream, l);
 	}
 
 	char *addr = argv[argc - 2];
 	unsigned short port = atoi(argv[argc - 1]);
 
 	std::cout << "Connecting " << addr << ":" << port << std::endl;
-	if (plog) *plog << "Connecting  " << addr << ":" << port << argv[0] << std::endl;
+	if (plog) *plog << "Connecting  " << addr << ":" << port << argv[0] << streamlog::trace << std::endl;
 
 	int id = ciupcConnect(addr, port, dataCb, errorCb);
 	if (id < 0) {
@@ -96,16 +156,15 @@ int main(int argc, char **argv)
 	}
 
 	std::cout << "Connection id: " << id << std::endl;
-	if (plog) *plog << "Connection id: " << id << std::endl;
+	if (plog) *plog << "Connection id: " << id << streamlog::trace << std::endl;
 
 	// sleep until CTRL-C
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 	while (run) {
 		Sleep(5000);
 
-		//ciupcStop(id);
+		// ask server info every 5s
 		ciupcInfo(id);
-		//ciupcStart(id);
 	}
 
 	ciupcStop(id);

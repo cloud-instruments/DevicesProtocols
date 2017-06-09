@@ -8,7 +8,7 @@
 
 #define CIUP_LOG_MAX_STORE (100)
 
-#define CIUP_POINT_MAX_STORE (1000)
+#define CIUP_POINT_MAX_STORE (10000)
 
 // enque new datapoint to be sent
 void ciupEnqueueDatapoint(ciupDataPoint &p);
@@ -17,7 +17,7 @@ void ciupEnqueueDatapoint(ciupDataPoint &p);
 typedef struct ciupLog_t {
 
 	std::string descr;
-	streamlog::streamlog_level level;
+	streamlog::level level;
 
 }ciupLog;
 

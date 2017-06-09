@@ -6,6 +6,9 @@ namespace ciupClientTest_csc
 {
     class Program
     {
+        enum logLevel { debug, trace, warning, error };
+        static logLevel logFilter = logLevel.debug;
+
         // callback for incoming data
         // json: incoming data in json string format
         // id: numeric id of the receiver (as returned by ciupcStartReceiver)
@@ -13,8 +16,8 @@ namespace ciupClientTest_csc
         // fromPort: sender port
         static void ciupDataCb(int msgtype, String json, int id)
         {
-            printLog(logPath, "T", id.ToString(), " (", msgtype.ToString(), "): ", json);
-            Console.WriteLine("{0}({1}): {2}",id, msgtype, json);
+            printLog(logLevel.trace, id.ToString(), ": (", msgtype.ToString(), ") ", json);
+            Console.WriteLine("{0}: ({1}) {2}",id, msgtype, json);
         }
 
         // callback for errors
@@ -23,11 +26,19 @@ namespace ciupClientTest_csc
         // id: numeric id of the receiver (as returned by ciupcStartReceiver)
         static void ciupErrorCb(int code, String description, int id)
         {
-            printLog(logPath, "E", id.ToString(), ": error:", code.ToString(), " ", description);
+            printLog(logLevel.error, id.ToString(), ": error:", code.ToString(), " ", description);
             Console.WriteLine("{0}: error:{1} {2}", id, code, description);
         }
 
         static string logPath = "";
+
+        static void print_usage()
+        {
+            Console.WriteLine("Cloud Instruments Unified Protocol client test application, C# version");
+            Console.WriteLine("usage: ciupClientTest-csc ip port");
+            Console.WriteLine("  -l PATH : enable logfile");
+            Console.WriteLine("  -f X : filter logfile (E:errors, W:warnings, T:trace, D:debug)");
+        }
 
         static void Main(string[] args)
         {
@@ -48,6 +59,29 @@ namespace ciupClientTest_csc
                     logPath = args[i + 1];
                     expected_argc += 2;
                 }
+
+                // set loglevel filter
+                if (args[i] == "-f")
+                {
+                    if (i >= args.Length - 1)
+                    {
+                        print_usage();
+                        return;
+                    }
+
+                    switch (args[i + 1][0])
+                    {
+                        case 'E': logFilter = logLevel.error;  break;
+                        case 'W': logFilter = logLevel.warning; break;
+                        case 'T': logFilter = logLevel.trace; break;
+                        case 'D': logFilter = logLevel.debug; break;
+                        default:
+                            print_usage();
+                            return;
+                    }
+                    expected_argc += 2;
+                }
+
             }
 
             // min expected arguments is 2 (IP and port)
@@ -64,13 +98,14 @@ namespace ciupClientTest_csc
             {
                 addr = args[expected_argc - 2];
                 port = Convert.ToUInt16(args[expected_argc - 1]);
-            }catch
+            }
+            catch
             {
                 print_usage();
                 return;
             }
 
-            printLog(logPath, "T", "Connecting to ", addr, ":", Convert.ToString(port));
+            printLog(logLevel.trace, "Connecting to ", addr, ":", Convert.ToString(port));
             Console.WriteLine("Connecting to {0}:{1}", addr, port);
 
             NativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
@@ -78,23 +113,22 @@ namespace ciupClientTest_csc
             int id = NativeMethods.ciupcConnect(addr, port, pDataCb, pErrorCb);
             if (id < 0)
             {
-                printLog(logPath, "E", "Cannot connect");
+                printLog(logLevel.error, "Cannot connect");
                 Console.WriteLine("Cannot connect");
                 return;
             }
 
-            printLog(logPath, "T", "Connection id: {0} ", id.ToString());
+            printLog(logLevel.trace, "Connection id: ", id.ToString());
             Console.WriteLine("Connection id: {0}", id);
 
             // intercept [CTRL][c] while sleeping
             Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) {
-                printLog(logPath, "T", "[CTRL][c]");
+                printLog(logLevel.trace, "[CTRL][c]");
                 Console.WriteLine("[CTRL][c]");
                 e.Cancel = true;
                 run = false;
             };
 
-            // sleep until ctrl-c
             while (run)
             {
                 System.Threading.Thread.Sleep(5000);
@@ -105,27 +139,29 @@ namespace ciupClientTest_csc
             NativeMethods.ciupcDisconnect(id);
         }
 
-        static void print_usage()
+        static void printLog(logLevel lev, params string[] args)
         {
+            if (logPath.Length == 0) return;
+            if (lev < logFilter) return;
 
-            string codeBase = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
-            string name = System.IO.Path.GetFileName(codeBase);
+            string label = "D";
+            switch (lev){
+                case logLevel.trace:   label = "T"; break;
+                case logLevel.warning: label = "W"; break;
+                case logLevel.error:   label = "E"; break;
+            }
 
-            Console.WriteLine("Cloud Instruments Unified Protocol client test application");
-            Console.WriteLine("usage: ciupClientTest-csc ip port");
-            Console.WriteLine("  -l path : enable logfile");
-        }
-
-        static void printLog(string path, string label, params string[] args)
-        {
-            if (path.Length == 0) return;
             try
             {
-                System.IO.File.AppendAllText(path, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " " + label + " " + String.Join("", args) + "\n");
+                //System.IO.File.AppendAllText(logPath, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " " + label + " " + String.Join("", args) + "\r\n");
+                System.IO.StreamWriter w = System.IO.File.AppendText(logPath);
+                w.WriteLine("{0} {1} {2}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"), label , String.Join("", args));
+                //w.Flush();
+                w.Close();
             }
             catch
             {
-                Console.WriteLine("Cannot write to {0}", path);
+                Console.WriteLine("Cannot write to {0}", logPath);
             }
         }
            

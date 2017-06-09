@@ -33,9 +33,6 @@
 // extract payload size from mmessage pointer
 #define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-2)*256) + (unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-1)))
 
-// timeout for answer read
-#define CIUP_ANS_TIMEOUT_MS 100
-
 // ms timeout to stop threads
 #define CIUP_STOP_THREAD_TIMEOUT_MS 500
 

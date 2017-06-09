@@ -3,16 +3,16 @@
 : SETTINGS SECTION :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 : TCP port to use
-SET port=10001
+SET port=10000
 
 : address to use
 SET ip=127.0.0.1
 
-: logs filter (E:errors only, W: E+warning, T:W+trace, D:all)
-SET logFilter=D
+: logs filter (E:errors only, W: E+warning, T:W+trace)
+SET logFilter=E
 
 : server sleep in mS
-SET sleep=1000
+SET sleep=1
 
 : PROGRAM SECTION ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -28,22 +28,22 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER EMULATOR
-SET cmd=..\Release\ciupServerEmulator.exe -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator.log %port%
+SET cmd=..\Release\ciupServerEmulator.exe -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator-STRESS.log %port% 
 echo Executing %cmd%
-start %cmd%
+start %cmd% 
 
 : SLEEP A BIT
 @ping 127.0.0.1 -n 2 -w 1000 > nul
 
-: RUN C++ CLIENT SIMULATOR 
-SET cmd=..\Release\ciupClientTest.exe -f %logFilter% -l log\%dt%-ciupClientCpp.log %ip% %port%
+: RUN C++ CLIENT SIMULATOR
+SET cmd=..\Release\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-STRESS.log %ip% %port%
 echo Executing %cmd%
 start %cmd%
 
 : RUN C# CLIENT SIMULATOR
-SET cmd=..\Release\ciupClientTest-csc.exe -f %logFilter% -l log\%dt%-ciupClientCsc.log %ip% %port%
-echo Executing %cmd%
-start %cmd% 
+:SET cmd=..\Release\ciupClientTest-csc.exe -f %logFilter% -l log\%dt%-ciupClientCsc-STRESS.log %ip% %port%
+:echo Executing %cmd%
+:start %cmd% 
 
 echo On the other consoles:
 echo   Hit [CTRL][C] to stop

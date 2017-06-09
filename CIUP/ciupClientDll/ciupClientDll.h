@@ -11,16 +11,16 @@
 
 // Data callback definition
 typedef void (__stdcall *ciupDataCb)(
-	int,                 // message type (CIUP_MSG_* defines)
-	const char*,         // incoming message as json string
-	int                  // id of connection instance
+	int messageType,          // message type (CIUP_MSG_* defines)
+	const char* data,         // incoming message as json string
+	int connectionId          // id of connection instance
 );
 
 // Error callback definition
 typedef void(__stdcall *ciupErrorCb)(
-	int,               // error code
-	const char*,       // error description
-	int                // id of connection instance
+	int errorCode,            // error code
+	const char* errorDescr,   // error description
+	int connectionId          // id of connection instance
 );
 
 // exported functions //////////////////////////////////////////////////////////
