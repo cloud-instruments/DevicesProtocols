@@ -7,6 +7,7 @@
 #include <sstream>
 #include <queue>
 #include "../w32_tcp_socket_test/win32_tcp_socket.h"
+#include <process.h>
 
 // json serialization functions ////////////////////////////////////////////////
 
@@ -156,6 +157,11 @@ template< typename ... Args > void ciupError(int id, int code, Args const& ... a
 	ciupConnectionsList[id].errorCb(code, stream.str().c_str(), id);
 }
 
+void resetChCount(int *counters)
+{
+	for (int i = 0; i < CIUP_CH_MAX_COUNT; i++) counters[i] = -1;
+}
+
 DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 
 	int id = (int)lpParam;
@@ -167,7 +173,8 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 	int rErr = 0;
 	int wErr = 0;
 
-	int countExpected = -1;
+	int chCount[CIUP_CH_MAX_COUNT];
+	resetChCount(chCount);
 
 	while (ciupConnectionsList[id].run) {
 
@@ -177,7 +184,7 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 			BYTE c = ciupConnectionsList[id].commands.front();
 			void *cmd = ciupBuildMessage(c);
 
-			int wsize = w32_tcp_socket_write(ciupConnectionsList[id].sock, cmd, CIUP_MSG_SIZE(0), 0);
+			int wsize = w32_tcp_socket_write(ciupConnectionsList[id].sock, cmd, CIUP_MSG_SIZE(0), 1);
 			if (wsize != CIUP_MSG_SIZE(0)) {
 
 				// write error
@@ -193,10 +200,11 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 		}
 
 		// read socket data
-		ret = w32_tcp_socket_read(ciupConnectionsList[id].sock, buff, CIUP_MAX_MSG_SIZE, 0);
+		ret = w32_tcp_socket_read(ciupConnectionsList[id].sock, buff, CIUP_MAX_MSG_SIZE, 100);
 
 		if (ret == 0) {
 			// TIMEOUT: no data
+			Sleep(10);
 		}
 		else if (ret < 0) {
 
@@ -219,20 +227,27 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 		else {
 
 			// control sequence for datapoints
+			bool seqError = false;
 			if (*(buff + CIUP_TYPE_POS) == CIUP_MSG_DATAPOINT) {
 
-				int counter = (int)*((USHORT*)(buff+CIUP_PAYLOAD_POS));
-				if (countExpected != -1) {
-					if (countExpected != counter) {
-						ciupError(id, CIUP_ERR_SYNTAX, "sequence, expected:", countExpected, " received:", counter);
+				USHORT counter = *((USHORT*)(buff+CIUP_PAYLOAD_POS));
+				USHORT channel = *((USHORT*)(buff + CIUP_PAYLOAD_POS+2));
+
+				if (chCount[channel] != -1) {
+					int expected = (chCount[channel] + 1) % USHRT_MAX;
+					if (counter != expected) {
+						ciupError(id, CIUP_ERR_SYNTAX, "sequence, expected:", expected, " received:", counter);
+						seqError = true;
+						rErr++;
 					}
+
 				}
-				countExpected = ++counter%USHRT_MAX;
+				chCount[channel] = counter;
 			}
 
 			// message is ok
 			ciupConnectionsList[id].dataCb(*(buff + CIUP_TYPE_POS), json.c_str(), id);
-			rErr = 0;
+			if (!seqError) rErr = 0;
 		}
 
 		// check error count
@@ -242,6 +257,7 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 			w32_tcp_socket_close(&(ciupConnectionsList[id].sock));
 			wErr = 0;
 			rErr = 0;
+			resetChCount(chCount);
 		}
 
 		// if required reconnect
@@ -250,7 +266,7 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 			ciupConnectionsList[id].sock = w32_tcp_socket_client_create(ciupConnectionsList[id].addr, ciupConnectionsList[id].port);
 			if (!ciupConnectionsList[id].sock->lasterr.empty()) {
 				w32_tcp_socket_close(&(ciupConnectionsList[id].sock));
-				Sleep(500);
+				Sleep(100);
 			}
 			else {
 				ciupcStart(id);
@@ -310,12 +326,11 @@ extern "C" {
 
 		if (id >= CIUP_MAX_CONNECTIONS) return;
 
-		ciupConnectionsList[id].run = false;
-
 		// join thread
-		if (WaitForSingleObject(ciupConnectionsList[id].hThread, CIUP_STOP_THREAD_TIMEOUT_MS) == WAIT_TIMEOUT) {
-			TerminateThread(ciupConnectionsList[id].hThread, 0);
-		}
+		ciupConnectionsList[id].run = false;
+		WaitForSingleObject(ciupConnectionsList[id].hThread, INFINITE);
+		CloseHandle(ciupConnectionsList[id].hThread);
+		ciupConnectionsList[id].hThread = NULL;
 
 		w32_tcp_socket_close(&(ciupConnectionsList[id].sock));
 		ciupConnectionsList[id].empty();

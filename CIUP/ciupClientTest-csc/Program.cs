@@ -9,6 +9,11 @@ namespace ciupClientTest_csc
         enum logLevel { debug, trace, warning, error };
         static logLevel logFilter = logLevel.debug;
 
+        static Boolean performance=false;
+        static int tPrev = Environment.TickCount;
+        static int cPrev = 0;
+        static int msgcount = 0;
+
         // callback for incoming data
         // json: incoming data in json string format
         // id: numeric id of the receiver (as returned by ciupcStartReceiver)
@@ -16,8 +21,30 @@ namespace ciupClientTest_csc
         // fromPort: sender port
         static void ciupDataCb(int msgtype, String json, int id)
         {
-            printLog(logLevel.trace, id.ToString(), ": (", msgtype.ToString(), ") ", json);
-            Console.WriteLine("{0}: ({1}) {2}",id, msgtype, json);
+            if (performance)
+            {
+                int tNow = Environment.TickCount;
+                msgcount++;
+
+                if (tNow - tPrev > 1000)
+                {
+
+                    // FIXME: don't care overflow
+
+                    double mS = (msgcount - cPrev) / ((tNow - tPrev) / 1000.0);
+
+                    Console.WriteLine("{0}: {1} msg/s ({2} msg in {3} mS)", id, mS, msgcount - cPrev , tNow - tPrev);
+                    printLog(logLevel.error, id.ToString(), ": ", mS.ToString(), " msg/s (" , (msgcount - cPrev).ToString(), "msg in ",(tNow - tPrev).ToString(), " mS)");
+
+                    tPrev = Environment.TickCount;
+                    cPrev = msgcount;
+                }
+            }
+            else
+            {
+                printLog(logLevel.trace, id.ToString(), ": (", msgtype.ToString(), ") ", json);
+                Console.WriteLine("{0}: ({1}) {2}", id, msgtype, json);
+            }
         }
 
         // callback for errors
@@ -38,6 +65,7 @@ namespace ciupClientTest_csc
             Console.WriteLine("usage: ciupClientTest-csc ip port");
             Console.WriteLine("  -l PATH : enable logfile");
             Console.WriteLine("  -f X : filter logfile (E:errors, W:warnings, T:trace, D:debug)");
+            Console.WriteLine(" - p : performance mode");
         }
 
         static void Main(string[] args)
@@ -71,7 +99,7 @@ namespace ciupClientTest_csc
 
                     switch (args[i + 1][0])
                     {
-                        case 'E': logFilter = logLevel.error;  break;
+                        case 'E': logFilter = logLevel.error; break;
                         case 'W': logFilter = logLevel.warning; break;
                         case 'T': logFilter = logLevel.trace; break;
                         case 'D': logFilter = logLevel.debug; break;
@@ -82,6 +110,12 @@ namespace ciupClientTest_csc
                     expected_argc += 2;
                 }
 
+                // performance mode
+                if (args[i] == "-p")
+                {
+                    performance = true;
+                    expected_argc += 1;
+                }
             }
 
             // min expected arguments is 2 (IP and port)
@@ -132,7 +166,7 @@ namespace ciupClientTest_csc
             while (run)
             {
                 System.Threading.Thread.Sleep(5000);
-                NativeMethods.ciupcInfo(id);
+                //NativeMethods.ciupcInfo(id);
             }
 
             NativeMethods.ciupcStop(id);

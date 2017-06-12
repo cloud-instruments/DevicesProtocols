@@ -11,7 +11,7 @@
 bool run = true;
 bool performance = false;
 
-// log globals
+// log globals  - WARN: streamlog is not thread safe
 std::string logpath;
 std::ofstream *logStream = NULL;
 streamlog *plog = NULL;
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		Sleep(5000);
 
 		// ask server info every 5s
-		ciupcInfo(id);
+		//ciupcInfo(id);
 	}
 
 	ciupcStop(id);

@@ -5,16 +5,49 @@
 #include "ciupServerCommon.h"
 
 #include <iostream>
+#include <queue>
+#include <string>
+#include <sstream>
 
-// log globals
+// log globals - WARN: streamlog is not thread safe
 std::string logpath;
 std::ofstream *logStream = NULL;
 streamlog *plog = NULL;
 
 #define SENDER_SLEEP_DEFAULT 1000
+#define SENDER_CH_DEFAULT 1
+
 int senderSleep = SENDER_SLEEP_DEFAULT;
+streamlog::level l = streamlog::debug;
 
 bool run = true;
+
+DWORD WINAPI channelThread(LPVOID lpParam) {
+
+	int ch = (int)lpParam;
+
+	ciupLog log;
+	ciupDataPoint point;
+	USHORT counter = 0;
+	ULONGLONG sTime = GetTickCount64();
+
+	while (run) {
+
+		point.counter = counter;
+		point.channel = ch;
+		point.Stime = (float)(GetTickCount64() - sTime) / 1000;
+		point.Acurr = (float)rand() / RAND_MAX;
+		point.AHcap = (float)rand() / RAND_MAX;
+		point.Ktemp = (float)rand() / RAND_MAX;
+		point.Vdiff = (float)rand() / RAND_MAX;
+
+		ciupEnqueueDatapoint(point);
+
+		counter = ++counter%USHRT_MAX;
+		Sleep(senderSleep>0 ? senderSleep : 1); // Sleep at least 1 (minimum for windows)
+	}
+	return 0;
+}
 
 // [CTRL][c] handler
 BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
@@ -39,12 +72,13 @@ void print_usage(const char *exe) {
 	std::cerr << "  -l PATH : enable logfile" << std::endl;
 	std::cerr << "  -f X : filter logfile (E:errors, W:warnings, T:trace, D:debug)" << std::endl;
 	std::cerr << "  -p : performance mode" << std::endl;
+	std::cerr << "  -c N : run N channels (default:" << SENDER_CH_DEFAULT << ")" << std::endl;
 }
 
 int main(int argc, char **argv)
 {
 	int expected_argc = 2;
-	streamlog::level l = streamlog::debug;
+	int chCount = SENDER_CH_DEFAULT;
 	bool performance = false;
 
 	// parse arguments
@@ -58,6 +92,17 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			senderSleep = atoi(argv[i + 1]);
+			expected_argc += 2;
+		}
+
+		// set channels count
+		if (!strcmp(argv[i], "-c")) {
+
+			if (i >= argc - 1) {
+				print_usage(argv[0]);
+				return -1;
+			}
+			chCount = atoi(argv[i + 1]);
 			expected_argc += 2;
 		}
 
@@ -115,71 +160,74 @@ int main(int argc, char **argv)
 		// open log file
 		logStream = new std::ofstream(logpath, std::ios::app);
 		plog = new streamlog(*logStream, l);
+
+		std::cout << plog << " " << logpath << std::endl;
 	}
 
 	unsigned short port = atoi(argv[argc - 1]);
 
-	// start the sender server
-	ciupServerStart(port);
-
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
+	// start the sender server
+	ciupServerInit();
+	if (ciupServerStart(port) != 0) {
+		ciupLog log;
+		while (ciupGetLog(&log) == 0) {
+			if (plog) *plog << log.descr << log.level << std::endl;
+			if (log.level >= l) std::cout << log.descr << std::endl;
+		}
+		return -1;
+	}
+
+	// start channels
+	for (int i = 0; i < chCount; i++) {
+		CreateThread(0, 0, channelThread, (LPVOID)i, 0, NULL); // TODO: error control
+	}
+
 	ciupLog log;
-	ciupDataPoint point;
-	USHORT counter = 0;
-	ULONGLONG sTime = GetTickCount64();
 
 	DWORD tPrev = GetTickCount();
 	DWORD cPrev = 0;
-
-
-	struct timeval tv;
-	fd_set dummy;
-	SOCKET s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	DWORD tNow;
+	double mS;
 
 	while (run) {
 
 		while (ciupGetLog(&log) == 0) {
 			if (plog) *plog << log.descr << log.level << std::endl;
-			if ( log.level >=l ) std::cout << log.descr << std::endl;
-			Sleep(1);
+			std::cout << log.descr << std::endl;
+			Sleep(10);
 		}
-
-		point.counter = counter;
-		point.channel = 0;
-		point.Stime = (float)(GetTickCount() - sTime) / 1000;
-		point.Acurr = (float)rand() / RAND_MAX;
-		point.AHcap = (float)rand() / RAND_MAX;
-		point.Ktemp = (float)rand() / RAND_MAX;
-		point.Vdiff = (float)rand() / RAND_MAX;
-
-		ciupEnqueueDatapoint(point);
 
 		if (performance) {
 
-			DWORD tNow = GetTickCount();
-
+			tNow = GetTickCount();
 			if (tNow - tPrev > 1000) {
 
-				// FIXME: don't care overflow
+				int c = ciupDatapointIndex();
+				int cDiff = c - cPrev;
+				if (cDiff< 0) cDiff += CIUP_POINT_MAX_STORE;
 
-				double mS = (counter - cPrev) / ((tNow - tPrev) / 1000.0);
+				mS = cDiff / ((tNow - tPrev) / 1000.0);
 
-				std::cout << mS << " msg/s " << " (" << counter - cPrev << "msg in " << tNow - tPrev << " mS)" << std::endl;
-				if (plog) *plog << mS << " msg/s " << " (" << counter - cPrev << "msg in " << tNow - tPrev << " mS)" << streamlog::trace << std::endl;
+				std::cout << "Generating " << mS << " msg/s " << " (" << cDiff << "msg in " << tNow - tPrev << " mS)" << std::endl;
+				if (plog) *plog << "Generating " << mS << " msg/s " << " (" << cDiff << "msg in " << tNow - tPrev << " mS)" << streamlog::trace << std::endl;
 
+				// qIndex from connections
+				for (size_t i = 0; i < ciupConnectionCount(); i++) {
+					std::cout << "Connection " << i << " qIndex " << ciupQueueIndex(i) << std::endl;
+					if (plog) *plog << "Connection " << i << " qIndex " << ciupQueueIndex(i)<< "Connection " << i << " qIndex " << ciupQueueIndex(i) << streamlog::trace << std::endl;
+				}
+				
 				tPrev = GetTickCount();
-				cPrev = counter;
+				cPrev = c;
 			}
 		}
-		else {
-			if (plog) *plog << "Enqueued new point counter:" << counter << streamlog::debug << std::endl;
-			if ( streamlog::debug>=l ) std::cout << "Enqueued new point counter:" << counter << std::endl;
-		}
 
-		counter = ++counter%USHRT_MAX;
-		Sleep(senderSleep?senderSleep:1); // Sleep at least 1 (minimum for windows)
+		Sleep(100);
 	}
+
+	Sleep(500);
 
 	ciupServerStop();
     return 0;

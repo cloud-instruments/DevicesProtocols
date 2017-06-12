@@ -1,5 +1,6 @@
 // (C)2017 Matteo Lucarelli All rights reserved
 
+
 #ifndef STREAMLOG_H_INCLUDED
 #define STREAMLOG_H_INCLUDED
 
@@ -48,7 +49,9 @@ public:
 	{}
 
 	// DESTRUCTOR
-	virtual ~streamlog(){flush();}
+	virtual ~streamlog(){
+		flush();
+	}
 
 	// set level for single message (until flush/endl)
 	// Ex:
@@ -116,7 +119,6 @@ private:
 	level m_current_level;
 	level m_default_level;
 	std::ostream & out;
-	
 };
 
 // manipulators ////////////////////////////////////////////////////////////////
@@ -133,7 +135,6 @@ inline streamlog & operator<<(streamlog & out, const __level & level){
 	out.set_filter(level.m_level);
 	return out;
 }
-
 
 // overloads endl for flush
 namespace std {

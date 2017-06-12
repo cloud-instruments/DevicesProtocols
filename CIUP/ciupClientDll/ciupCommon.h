@@ -37,7 +37,10 @@
 #define CIUP_STOP_THREAD_TIMEOUT_MS 500
 
 // error count to disconnect/reconnect
-#define CIUP_SOCKET_ERROR_LIMIT 3
+#define CIUP_SOCKET_ERROR_LIMIT (3)
+
+// max channels count
+#define CIUP_CH_MAX_COUNT (128)
 
 // message types
 #define CIUP_MSG_SERVERINFO   ((BYTE)0x01)
@@ -100,19 +103,6 @@ typedef struct {
 	// TODO
 
 } ciupDataPoint;
-#pragma pack()
-
-// WARN: must be a multiple of 8
-#define CIUP_CH_MAX_COUNT (128)
-
-// server setup packet
-#pragma pack(1)
-typedef struct {
-	
-	BYTE chFilter[CIUP_CH_MAX_COUNT / 8] = {};  // filter for channel (set using CIUP_CH define)
-	float dataFreqencyHz = 0;                   // frequency to read data (ignored if device-driven)
-
-} ciupServerSetup;
 #pragma pack()
 
 // allocate and fill the message buffer

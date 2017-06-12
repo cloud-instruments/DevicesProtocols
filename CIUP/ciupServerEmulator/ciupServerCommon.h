@@ -8,7 +8,10 @@
 
 #define CIUP_LOG_MAX_STORE (100)
 
-#define CIUP_POINT_MAX_STORE (10000)
+#define CIUP_POINT_MAX_STORE (100000)
+
+// must be callsed before any other
+int ciupServerInit();
 
 // enque new datapoint to be sent
 void ciupEnqueueDatapoint(ciupDataPoint &p);
@@ -28,3 +31,9 @@ int ciupGetLog(ciupLog *log);
 // start the server on UDP port
 int ciupServerStart(unsigned short port);
 int ciupServerStop();
+
+// return the pointbuffer index
+int ciupDatapointIndex();
+
+size_t ciupConnectionCount();
+int ciupQueueIndex(size_t connection);

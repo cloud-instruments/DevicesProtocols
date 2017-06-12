@@ -80,7 +80,6 @@ w32_socket *w32_tcp_socket_client_create(const char* addr, unsigned short port) 
 		std::stringstream ss;
 		ss << "connect to " << addr << ":" << port << " failed: " << WSAGetLastError();
 		s->lasterr = ss.str();
-		//s->lasterr = "connect to " + addr + ":" + port + " failed: " + WSAGetLastError();
 		// TODO WSAGetLastError==WSAECONNREFUSED 10061
 		return s;
 	}
@@ -143,6 +142,12 @@ w32_socket *w32_tcp_socket_server_wait(w32_socket *s, int max_queue){
 		delete ns;
 		return NULL;
 	}
+
+	/*int flag = 1;
+	setsockopt(ns->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(int));
+	int sendbuff = 0;
+	setsockopt(ns->sock, SOL_SOCKET, SO_SNDBUF, (char*)&sendbuff, sizeof(int));*/
+
 
 	// init WSA
 	WSADATA wsaData;
