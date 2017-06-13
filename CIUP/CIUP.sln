@@ -18,6 +18,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ciupServerEmulator", "ciupS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "w32_tcp_socket_test", "w32_tcp_socket_test\w32_tcp_socket_test.vcxproj", "{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTestCommon", "UnitTestCommon\UnitTestCommon.vcxproj", "{66C926AC-5515-4D7C-A81E-7073995F307C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTestServer", "UnitTestServer\UnitTestServer.vcxproj", "{33FADB75-F06B-4148-A73E-FD7F602409EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +94,26 @@ Global
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x64.Build.0 = Release|x64
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x86.ActiveCfg = Release|Win32
 		{381DB5BE-2D47-45C5-97A2-07D44F5FEE37}.Release|x86.Build.0 = Release|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Debug|x64.ActiveCfg = Debug|x64
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Debug|x64.Build.0 = Debug|x64
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Debug|x86.ActiveCfg = Debug|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Debug|x86.Build.0 = Debug|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Release|Any CPU.ActiveCfg = Release|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Release|x64.ActiveCfg = Release|x64
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Release|x64.Build.0 = Release|x64
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Release|x86.ActiveCfg = Release|Win32
+		{66C926AC-5515-4D7C-A81E-7073995F307C}.Release|x86.Build.0 = Release|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Debug|x64.ActiveCfg = Debug|x64
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Debug|x64.Build.0 = Debug|x64
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Debug|x86.ActiveCfg = Debug|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Debug|x86.Build.0 = Debug|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Release|Any CPU.ActiveCfg = Release|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Release|x64.ActiveCfg = Release|x64
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Release|x64.Build.0 = Release|x64
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Release|x86.ActiveCfg = Release|Win32
+		{33FADB75-F06B-4148-A73E-FD7F602409EF}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -8,11 +8,15 @@ SET port=10000
 : address to use
 SET ip=127.0.0.1
 
-: logs filter (E:errors only, W: E+warning, T:W+trace)
+: logs filter (E:errors only, W: E+warning, T:W+trace, D:all)
 SET logFilter=E
 
 : server sleep in mS
-SET sleep=2
+: sleep=8 = 10000+ msg/s
+SET sleep=8
+
+: server channels count
+SET ch=100
 
 : PROGRAM SECTION ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -33,10 +37,18 @@ echo Executing %cmd%
 start %cmd%
 
 : SLEEP A BIT
-@ping 127.0.0.1 -n 2 -w 1000 > nul
+@ping 127.0.0.1 -n 1 -w 500 > nul
 
 : RUN C++ CLIENT SIMULATOR
 SET cmd=..\Release\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-STRESS.log %ip% %port%
+echo Executing %cmd%
+start %cmd%
+
+: SLEEP A BIT
+@ping 127.0.0.1 -n 1 -w 500 > nul
+
+: RUN A SECOND C++ CLIENT SIMULATOR
+SET cmd=..\Release\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-STRESS2.log %ip% %port%
 echo Executing %cmd%
 start %cmd%
 

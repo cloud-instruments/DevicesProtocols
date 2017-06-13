@@ -8,7 +8,7 @@ SET port=10000
 : address to use
 SET ip=127.0.0.1
 
-: logs filter (E:errors only, W: E+warning, T:W+trace D:all)
+: logs filter (E:errors only, W: E+warning, T:W+trace, D:all)
 SET logFilter=E
 
 : server sleep in mS
@@ -32,7 +32,7 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER EMULATOR
-SET cmd=..\Debug\ciupServerEmulator.exe -p -c %ch% -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator-DEBUG.log %port% 
+SET cmd=..\Debug\ciupServerEmulator.exe -p -c %ch% -s %sleep% -f %logFilter% %port% 
 echo Executing %cmd%
 start %cmd%
 

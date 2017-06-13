@@ -31,7 +31,7 @@
 #define CIUP_MSG_SIZE(payload_size) (CIUP_MAX_MSG_SIZE)
 
 // extract payload size from mmessage pointer
-#define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-2)*256) + (unsigned int)(*(pmsg+CIUP_PAYLOAD_POS-1)))
+#define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*((BYTE*)pmsg+CIUP_PAYLOAD_POS-2)*256) + (unsigned int)(*((BYTE*)pmsg+CIUP_PAYLOAD_POS-1)))
 
 // ms timeout to stop threads
 #define CIUP_STOP_THREAD_TIMEOUT_MS 500
@@ -109,14 +109,12 @@ typedef struct {
 // message buffer size will be CIUP_MSG_SIZE(payload_size)
 // WARN: message must be delete [] after use
 void *ciupBuildMessage(
-	BYTE type, 
-	void* payload=NULL, 
-	size_t payload_size=0
+	BYTE type,                   // message type, use CIUP_MSG_* defines
+	void* payload=NULL,          // payload pointer 
+	size_t payload_size=0        // payload size
 );
 
 int ciupCheckMessageSyntax(
-	void *msg,
-	size_t msg_size
+	void *msg,                   // message pointer
+	size_t msg_size              // size of message in bytes
 );
-
-// TODO: read answer function

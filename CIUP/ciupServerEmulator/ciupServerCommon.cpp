@@ -239,18 +239,29 @@ DWORD WINAPI connectionThread(LPVOID lpParam) {
 	return 0;
 }
 
-void closeAllConnections()
+void closeConnection(int i)
+{
+	ciupConnectionList[i]->run = false;
+	WaitForSingleObject(ciupConnectionList[i]->hThread, INFINITE);
+	CloseHandle(ciupConnectionList[i]->hThread);
+	ciupConnectionList[i]->hThread = NULL;
+	w32_tcp_socket_close(&(ciupConnectionList[i]->sock));
+	delete[] ciupConnectionList[i];
+	ciupConnectionList.erase(ciupConnectionList.begin() + i);
+}
+
+void closeInactiveConnections()
 {
 	for (unsigned int i = 0; i < ciupConnectionList.size(); i++) {
-		ciupConnectionList[i]->run = false;
-		WaitForSingleObject(ciupConnectionList[i]->hThread, INFINITE);
-		CloseHandle(ciupConnectionList[i]->hThread);
-		ciupConnectionList[i]->hThread = NULL;
-		w32_tcp_socket_close(&(ciupConnectionList[i]->sock));
-		delete[] ciupConnectionList[i];
+		if (!ciupConnectionList[i]->run) {
+			closeConnection(i);
+		}
 	}
+}
 
-	ciupConnectionList.clear();
+void closeAllConnections()
+{
+	while (!ciupConnectionList.empty()) closeConnection(0);
 }
 
 // SERVER THREAD ///////////////////////////////////////////////////////////////
@@ -290,6 +301,7 @@ DWORD WINAPI serverThread(LPVOID lpParam) {
 		else {
 			ciupQueueLog(streamlog::error, "w32_tcp_socket_server_wait: ", gServerSock->lasterr.c_str());
 		}
+		closeInactiveConnections();
 		Sleep(100);
 	}
 
@@ -343,5 +355,11 @@ int ciupServerInit()
 {
 	InitializeCriticalSectionAndSpinCount(&logCriticalSection, 0x00000400);
 	InitializeCriticalSectionAndSpinCount(&dataCriticalSection, 0x00000400);
+
+	ciupServerStop();
+	closeAllConnections();
+	gPointBuffer.i = 0;
+	while (!gLogQueue.empty()) gLogQueue.pop();
+	
 	return 0;
 }

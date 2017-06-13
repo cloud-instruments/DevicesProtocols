@@ -28,7 +28,7 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER EMULATOR
-SET cmd=..\Release\ciupServerEmulator.exe -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator.log %port%
+SET cmd=..\Release\ciupServerEmulator.exe -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator.log %port%
 echo Executing %cmd%
 start %cmd%
 
