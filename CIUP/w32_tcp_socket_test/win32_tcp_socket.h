@@ -4,7 +4,7 @@
 *  @date      2017
 */
 
-// TODO: for DLL: call WSA startuo only once not from DLLmain function
+// TODO: for DLL: call WSA startup only once not from DLLmain function
 
 #pragma once
 
