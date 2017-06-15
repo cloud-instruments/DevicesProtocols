@@ -1,0 +1,9 @@
+LIBRARY CIUPSERVERMACCORDLL
+EXPORTS
+	OnLoadRevA
+	OnStepStartRevA
+	OnStepEndRevA
+	OnUnLoadRevA
+	OnSuspendRevA
+	OnResumeRevA
+	GetSetpointRevA

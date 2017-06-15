@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 
-#include "..\ciupServerEmulator\ciupServerCommon.h"
+#include "..\ciupServer\ciupServerCommon.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

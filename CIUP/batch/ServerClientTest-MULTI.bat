@@ -36,10 +36,11 @@ FOR /f "tokens=1,2 delims=: " %%f IN ('time /t') DO SET t=%%f%%g
 SET dt=%d%_%t%
 
 REM RUN SERVER EMULATOR
-SET cmd=..\Release\ciupServerEmulator.exe -c 100 -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator-STRESS.log %port% 
+SET cmd=..\Release\ciupServer.exe -0 -c 100 -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator-STRESS.log %port% 
 ECHO Executing %cmd%
 START %cmd%
 
+REM RUN N CLIENTS
 FOR /l %%I IN (1,1,%clients%) DO (
 
 REM SLEEP A BIT

@@ -84,6 +84,13 @@ int main(int argc, char **argv)
 	// parse arguments
 	for (int i = 1; i < argc; i++) {
 
+		// print help
+		if (!strcmp(argv[i], "-h")) {
+
+			print_usage(argv[0]);
+			return 0;
+		}
+
 		// enable log file
 		if (!strcmp(argv[i], "-l")) {
 

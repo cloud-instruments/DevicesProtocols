@@ -32,14 +32,14 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER EMULATOR
-SET cmd=..\Release\ciupServerEmulator.exe -c 100 -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServerEmulator-STRESS.log %port% 
+SET cmd=..\Release\ciupServer.exe -0 -c 100 -p -s %sleep% -f %logFilter% -l log\%dt%-ciupServer-STRESS.log %port% 
 echo Executing %cmd%
 start %cmd%
 
 : SLEEP A BIT
 @ping 127.0.0.1 -n 1 -w 500 > nul
 
-: RUN C++ CLIENT SIMULATOR
+: RUN C++ CLIENT TEST
 SET cmd=..\Release\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-STRESS.log %ip% %port%
 echo Executing %cmd%
 start %cmd%
@@ -47,12 +47,12 @@ start %cmd%
 : SLEEP A BIT
 @ping 127.0.0.1 -n 1 -w 500 > nul
 
-: RUN A SECOND C++ CLIENT SIMULATOR
+: RUN A SECOND C++ CLIENT TEST
 SET cmd=..\Release\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-STRESS2.log %ip% %port%
 echo Executing %cmd%
 start %cmd%
 
-: RUN C# CLIENT SIMULATOR
+: RUN C# CLIENT TEST
 :SET cmd=..\Release\ciupClientTest-csc.exe -p -f %logFilter% -l log\%dt%-ciupClientCsc-STRESS.log %ip% %port%
 :echo Executing %cmd%
 :start %cmd% 

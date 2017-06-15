@@ -76,6 +76,13 @@ namespace ciupClientTest_csc
             int expected_argc = 2;
             for (int i = 0; i < args.Length; i++)
             {
+
+                if (args[i] == "-h")
+                {
+                    print_usage();
+                    return;
+                }
+
                 // enable log file
                 if (args[i] == "-l")
                 {

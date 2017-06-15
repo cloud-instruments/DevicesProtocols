@@ -32,19 +32,19 @@ for /f "tokens=1,2 delims=: " %%f in ('time /t') do set t=%%f%%g
 SET dt=%d%_%t%
 
 : RUN SERVER EMULATOR
-SET cmd=..\Debug\ciupServerEmulator.exe -p -c %ch% -s %sleep% -f %logFilter% %port% 
+SET cmd=..\Debug\ciupServer.exe -0 -p -c %ch% -s %sleep% -f %logFilter% %port% 
 echo Executing %cmd%
 start %cmd%
 
 : SLEEP A BIT
 @ping 127.0.0.1 -n 2 -w 1000 > nul
 
-: RUN C++ CLIENT SIMULATOR
+: RUN C++ CLIENT TEST
 SET cmd=..\Debug\ciupClientTest.exe -p -f %logFilter% -l log\%dt%-ciupClientCpp-DEBUG.log %ip% %port%
 echo Executing %cmd%
 start %cmd%
 
-: RUN C# CLIENT SIMULATOR
+: RUN C# CLIENT TEST
 SET cmd=..\Debug\ciupClientTest-csc.exe -p -f %logFilter% -l log\%dt%-ciupClientCsc-DEBUG.log %ip% %port%
 echo Executing %cmd%
 start %cmd%

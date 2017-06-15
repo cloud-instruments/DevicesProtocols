@@ -59,7 +59,7 @@ DWORD WINAPI pipeServerThread(LPVOID lpvParam)
 			break;
 		}
 		else if (readCount != BUFSIZE) {
-			cerr << "Uncomplete read";
+			cerr << "Uncomplete read" << endl;
 			break;
 		}
 
@@ -88,7 +88,7 @@ DWORD WINAPI pipeServerThread(LPVOID lpvParam)
 			break;
 		}
 		else if (wroteCount != BUFSIZE) {
-			cerr << "Uncomplete write";
+			cerr << "Uncomplete write" << endl;
 			break;
 		}
 
@@ -191,7 +191,7 @@ bool write_read_pipe_client()
 	ret = w32_message_pipe_write(hPipe, outBuff, BUFSIZE, &wroteCount);
 
 	if (ret == ERROR_BROKEN_PIPE) {
-		cerr << "Client disconnected, GLE=" << GetLastError() << endl;
+		cerr << "Server disconnected, GLE=" << GetLastError() << endl;
 		return false;
 	}
 	else if (ret != 0) {
@@ -199,14 +199,14 @@ bool write_read_pipe_client()
 		return false;
 	}
 	else if (wroteCount != BUFSIZE) {
-		cerr << "Uncomplete write";
+		cerr << "Uncomplete write" << endl;
 		return false;
 	}
 
 	ret = w32_message_pipe_read(hPipe, inBuff, BUFSIZE, &readCount);
 
 	if (ret == ERROR_BROKEN_PIPE) {
-		cerr << "Client disconnected, GLE=" << GetLastError() << endl;
+		cerr << "Server disconnected, GLE=" << GetLastError() << endl;
 		return false;
 	}
 	else if (ret != 0) {
@@ -214,7 +214,7 @@ bool write_read_pipe_client()
 		return false;
 	}
 	else if (readCount != BUFSIZE) {
-		cerr << "Uncomplete read";
+		cerr << "Uncomplete read" << endl;
 		return false;
 	}
 
@@ -248,6 +248,12 @@ int main(int argc, char **argv)
 	bool clientmode = false;
 
 	for (int i = 1; i < argc; i++) {
+
+		if (!strcmp(argv[i], "-h")) {
+
+			print_usage(argv[0]);
+			return 0;
+		}
 
 		if (!strcmp(argv[i], "-c")) {
 
