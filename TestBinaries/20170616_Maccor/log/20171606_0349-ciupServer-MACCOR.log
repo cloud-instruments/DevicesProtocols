@@ -1,0 +1,19 @@
+2017-06-16 13:49:22 T Listening on port 10000
+2017-06-16 13:49:22 T Starting Maccor mode
+2017-06-16 13:49:22 T ciup server listening un UDP port 10000
+2017-06-16 13:49:22 T pipe Server awaiting client connection
+2017-06-16 13:49:23 T Generating 0 msg/s  (0msg in 1078 mS)
+2017-06-16 13:49:23 T Connection 0 qIndex 0
+2017-06-16 13:49:24 T Started new connection T0000010C
+2017-06-16 13:49:24 D T0000010C Received START command
+2017-06-16 13:49:24 T Client connected: creating a processing thread
+2017-06-16 13:49:24 T pipe Server awaiting client connection
+2017-06-16 13:49:24 T Generating 1.91022 msg/s  (2msg in 1047 mS)
+2017-06-16 13:49:24 T Connection 0 qIndex 1
+2017-06-16 13:49:25 E P00000108 Client disconnected, GLE=109
+2017-06-16 13:49:26 T Generating 0 msg/s  (0msg in 1031 mS)
+2017-06-16 13:49:26 T Connection 0 qIndex 2
+2017-06-16 13:49:26 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:49:26 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:49:26 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:49:26 E T0000010C Read error limit reached, closing connection
