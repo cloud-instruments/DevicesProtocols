@@ -237,8 +237,6 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 					int expected = (chCount[channel] + 1) % USHRT_MAX;
 					if (counter != expected) {
 						ciupError(id, CIUP_ERR_SYNTAX, "sequence, expected:", expected, " received:", counter);
-						seqError = true;
-						rErr++;
 					}
 
 				}
@@ -247,7 +245,6 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 
 			// message is ok
 			ciupConnectionsList[id].dataCb(*(buff + CIUP_TYPE_POS), json.c_str(), id);
-			if (!seqError) rErr = 0;
 		}
 
 		// check error count

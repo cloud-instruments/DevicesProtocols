@@ -10,11 +10,8 @@
 
 #define CIUP_POINT_MAX_STORE (100000)
 
-// must be callsed before any other
-int ciupServerInit();
-
 // enque new datapoint to be sent
-void ciupEnqueueDatapoint(ciupDataPoint &p);
+void ciupServerEnqueueDatapoint(ciupDataPoint &p);
 
 // log message
 typedef struct ciupLog_t {
@@ -26,14 +23,14 @@ typedef struct ciupLog_t {
 
 // get log from FIFO 
 // return -1 when FIFO is empty
-int ciupGetLog(ciupLog *log);
+int ciupServerGetLog(ciupLog *log);
 
 // start the server on UDP port
 int ciupServerStart(unsigned short port);
 int ciupServerStop();
 
 // return the pointbuffer index
-int ciupDatapointIndex();
+int ciupServerDatapointIndex();
 
-size_t ciupConnectionCount();
-int ciupQueueIndex(size_t connection);
+size_t ciupServerConnectionCount();
+int ciupServerQueueIndex(size_t connection);

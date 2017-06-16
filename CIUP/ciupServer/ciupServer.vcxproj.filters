@@ -22,6 +22,12 @@
     <ClCompile Include="ciupServerEmulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ciupServerMaccor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ciupServerArbin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ciupClientDll\ciupCommon.h">
@@ -49,6 +55,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ciupServerEmulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ciupServerMaccor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ciupServerArbin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

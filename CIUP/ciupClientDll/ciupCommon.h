@@ -42,6 +42,9 @@
 // max channels count
 #define CIUP_CH_MAX_COUNT (128)
 
+// maccor dll named pipe
+#define CIUP_MACCOR_PIPENAME "ciuppipe"
+
 // message types
 #define CIUP_MSG_SERVERINFO   ((BYTE)0x01)
 #define CIUP_MSG_DATAPOINT    ((BYTE)0x02)
@@ -99,8 +102,6 @@ typedef struct {
 	float Acurr = 0;        // current in A
 	float Vdiff = 0;        // Voltage in V
 	float AHcap = 0;        // capacity in Ah
-
-	// TODO
 
 } ciupDataPoint;
 #pragma pack()

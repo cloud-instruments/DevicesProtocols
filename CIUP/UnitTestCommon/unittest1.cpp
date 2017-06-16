@@ -26,7 +26,7 @@ namespace UnitTestCommon
 			delete[] msg;
 		}
 
-		// TODO dll
+		// TODO unit test dll
 		/*TEST_METHOD(ciupClient)
 		{
 		ciupServerInfo d;

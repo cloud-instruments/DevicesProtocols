@@ -18,6 +18,7 @@ ciupClientTest : test application to simulate client side (c++)
 ciupClientTest-csc : test application to simulate client side (c#)
 ciupServer: server side application, can act as simulator
 ciupServerMaccorDll : user dll to connect Maccor test sw to ciup server
+ciupServerMaccorDllTest : tesp application to feed the ciupServerMaccorDll as the maccor SW does
 
 w32_tcp_socket_test : test application for UDP socket (both sides)
 w32_message_pipe_test : test application for merssage pipe (both sides)
@@ -41,6 +42,7 @@ Batch folder contains some other examples of tests
 OTHER NOTES =================================================================================
 
 Each application shows its own help if started with '-h' flag
+
 
 
 

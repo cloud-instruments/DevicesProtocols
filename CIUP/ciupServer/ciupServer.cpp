@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "../ciupClientTest/streamlog.h"
 #include "ciupServerEmulator.h"
+#include "ciupServerMaccor.h"
+#include "ciupServerArbin.h"
 
 #include <iostream>
 #include <queue>
@@ -40,6 +42,8 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 
 		gRun = false;
 		if (gRunMode == RM_EMULATOR) serverEmulatorStop();
+		else if (gRunMode == RM_MACCOR) serverMaccorStop();
+		else if (gRunMode == RM_ARBIN) serverArbinStop();
 
 		return TRUE;
 	default:
@@ -81,9 +85,9 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		// Simulator mode //////////////////////////////////////////////////////
+		// Emulator mode //////////////////////////////////////////////////////
 
-		// enable simulator mode
+		// enable emulator mode
 		if (!strcmp(argv[i], "-0")) {
 			gRunMode = RM_EMULATOR;
 			expected_argc++;
@@ -179,8 +183,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	// init log file
 	if (!logpath.empty()) {
-		// open log file
 		logStream = new std::ofstream(logpath, std::ios::app);
 		plog = new streamlog(*logStream, logFilter);
 		std::cout << "Logging to " << logpath << std::endl;
@@ -194,13 +198,14 @@ int main(int argc, char **argv)
 	// CRTL-C handler
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
+	// TODO: set server info
+
 	// start the server
-	ciupServerInit();
 	if (ciupServerStart(port) != 0) {
 		ciupLog log;
-		while (ciupGetLog(&log) == 0) {
-			if (plog) *plog << log.descr << log.level << std::endl;
-			if (log.level >= logFilter) std::cout << log.descr << std::endl;
+		while (ciupServerGetLog(&log) == 0) {
+			if (plog) *plog << "ciupServer: " << log.descr << log.level << std::endl;
+			if (log.level >= logFilter) std::cout << "ciupServer: " << log.descr << std::endl;
 		}
 		return -1;
 	}
@@ -218,19 +223,25 @@ int main(int argc, char **argv)
 		std::cout << "Starting Maccor mode" << std::endl;
 		if (plog) *plog << "Starting Maccor mode" << streamlog::trace << std::endl;
 
-		// TODO
+		serverMaccorStart();
 
 	}
 	else if (gRunMode == RM_ARBIN) {
 
-		std::cout << "Starting Arbin mode" << std::endl;
-		if (plog) *plog << "Starting Arbin mode" << streamlog::trace << std::endl;
-
 		// TODO
+
+		//std::cout << "Starting Arbin mode" << std::endl;
+		//if (plog) *plog << "Starting Arbin mode" << streamlog::trace << std::endl;
+
+		std::cerr << "Arbin mode not yet implemented" << std::endl;
+		if (plog) *plog << "Arbin mode not yet implemented" << streamlog::trace << std::endl;
 
 	}
 
-	ciupLog log;
+	int mlogN;
+	int slogN;
+	ciupLog mlog;
+	ciupLog slog;
 
 	// performance vars
 	DWORD tPrev = GetTickCount();
@@ -241,9 +252,18 @@ int main(int argc, char **argv)
 	while (gRun) {
 
 		// get ciupServerLog
-		while (ciupGetLog(&log) == 0) {
-			if (plog) *plog << log.descr << log.level << std::endl;
-			if (log.level >= logFilter) std::cout << log.descr << std::endl;
+		while (((slogN=ciupServerGetLog(&slog)) == 0) || ((mlogN = maccorGetLog(&mlog)) == 0))
+		{
+			if (slogN == 0) {
+				if (plog) *plog << slog.descr << slog.level << std::endl;
+				if (slog.level >= logFilter) std::cout << slog.descr << std::endl;
+			}
+
+			if (mlogN == 0) {
+				if (plog) *plog << mlog.descr << mlog.level << std::endl;
+				if (mlog.level >= logFilter) std::cout << mlog.descr << std::endl;
+			}
+
 			Sleep(10);
 		}
 
@@ -253,7 +273,7 @@ int main(int argc, char **argv)
 			tNow = GetTickCount();
 			if (tNow - tPrev > 1000) {
 
-				int c = ciupDatapointIndex();
+				int c = ciupServerDatapointIndex();
 				int cDiff = c - cPrev;
 				if (cDiff< 0) cDiff += CIUP_POINT_MAX_STORE;
 
@@ -263,13 +283,17 @@ int main(int argc, char **argv)
 				if (plog) *plog << "Generating " << mS << " msg/s " << " (" << cDiff << "msg in " << tNow - tPrev << " mS)" << streamlog::trace << std::endl;
 
 				// qIndex from connections
-				for (size_t i = 0; i < ciupConnectionCount(); i++) {
-					std::cout << "Connection " << i << " qIndex " << ciupQueueIndex(i) << std::endl;
-					if (plog) *plog << "Connection " << i << " qIndex " << ciupQueueIndex(i)<< "Connection " << i << " qIndex " << ciupQueueIndex(i) << streamlog::trace << std::endl;
+				for (size_t i = 0; i < ciupServerConnectionCount(); i++) {
+					int qI = ciupServerQueueIndex(i);
+					std::cout << "Connection " << i << " qIndex " << qI << std::endl;
+					if (plog) *plog << "Connection " << i << " qIndex " << qI << streamlog::trace << std::endl;
 				}
 				
 				tPrev = GetTickCount();
 				cPrev = c;
+
+				// TODO: maccor/arbin performance
+
 			}
 		}
 
@@ -277,7 +301,9 @@ int main(int argc, char **argv)
 	}
 
 	Sleep(500);
-	ciupServerStop();
+
+	// TODO
+	//ciupServerStop();
     return 0;
 }
 

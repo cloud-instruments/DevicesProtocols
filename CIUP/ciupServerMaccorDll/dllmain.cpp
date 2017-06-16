@@ -31,10 +31,8 @@
 #include "..\w32_message_pipe_test\w32_message_pipe.h"
 #include "..\ciupClientDll\ciupCommon.h"
 
-#define LOGDIR L"C:\\ciupServer\\log"
+#define LOGDIR L"C:\\ciupServer\\log-ciupServerMaccorDll"
 #define INIFILE L"C:\\ciupServer\\ciupServerMaccorDll.ini"
-
-#define PIPENAME "ciuppipe"
 
 // counters for channels
 USHORT gCounter[CIUP_CH_MAX_COUNT] = {0};
@@ -191,10 +189,10 @@ BOOL APIENTRY DllMain(HINSTANCE hInstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 				// init logging
 
-				int ll = GetPrivateProfileInt(L"GLOBAL", L"loglevel", 0, INIFILE);
+				int loglevel = GetPrivateProfileInt(L"GLOBAL", L"loglevel", 0, INIFILE);
 				streamlog::level lfilter = streamlog::error;
 
-				switch (ll) {
+				switch (loglevel) {
 				case 0: lfilter = streamlog::error; break;
 				case 1: lfilter = streamlog::warning; break;
 				case 2: lfilter = streamlog::trace; break;
@@ -220,9 +218,9 @@ BOOL APIENTRY DllMain(HINSTANCE hInstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			// connect to the pipe server
 			gDisablePipe = (GetPrivateProfileInt(L"GLOBAL", L"disablepipe", 0, INIFILE) != 0);
 			if (!gDisablePipe) {
-				gPipe = w32_named_pipe_connect(PIPENAME);
+				gPipe = w32_named_pipe_connect(CIUP_MACCOR_PIPENAME);
 				if ((!gPipe) && (gLog)) {
-					*gLog << "Cannot connect to named pipe " << PIPENAME << streamlog::error << std::endl;
+					*gLog << "Cannot connect to named pipe " << CIUP_MACCOR_PIPENAME << streamlog::error << std::endl;
 				}
 			}
             break;
@@ -433,9 +431,9 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 
 			// try reconnect pipe server
 			if (gLog) *gLog << "Server disconnected, trying to reconnect" << streamlog::warning << std::endl;
-			gPipe = w32_named_pipe_connect(PIPENAME);
+			gPipe = w32_named_pipe_connect(CIUP_MACCOR_PIPENAME);
 			if ((!gPipe) && (gLog)) {
-				*gLog << "Cannot connect to named pipe " << PIPENAME << streamlog::error << std::endl;
+				*gLog << "Cannot connect to named pipe " << CIUP_MACCOR_PIPENAME << streamlog::error << std::endl;
 			}
 		}
 
