@@ -5,6 +5,7 @@ CONTENT:
 *A3P-1: test applications for Arbin 3rd party protocol
 
 *MaccorU1 : test application and dll for Maccor User dll communication
+            DISCONTINUED: all the code has been integrated inside CIUP solution
 
 *CIUP: Cloud Instruments Unified protocol:
 
