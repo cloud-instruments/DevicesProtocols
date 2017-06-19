@@ -1,12 +1,8 @@
 // Arbin 3rd party protocol messages
-// (c)2017 Matteo Lucarelli
 
 #include "stdafx.h"
 
 #include "Arbin3ppMessages.h"
-
-// defined in documentation
-#define MAXCHANNELNO (16)
 
 typedef struct
 {
@@ -156,7 +152,7 @@ typedef struct
 	WORD m_wReserve; // Reserved
 	BYTE m_btIsReadData; // 1: Read data, 0: Not read data
 	BYTE m_btIsState; // 1: Read state, 0: Not read state
-	ST_READDATAORSTATE_VARIABLE m_st_Read_Value[MAXCHANNELNO];
+	ST_READDATAORSTATE_VARIABLE m_st_Read_Value[A3P_MAXCHANNELNO];
 	BYTE m_btCheckSum[2]; // Checking code
 }
 MP_INDEPENDENT_READDATAORSTATE_FEEDBACK; // 210 bytes in total
@@ -239,7 +235,7 @@ void a3p_add_header(a3p_msg *msg)
 {
 	for (int i = 0; i < 8; i++) *(msg->buff + i) = 0xAA;
 
-	DWORD s = (DWORD)(msg->size - 16);
+	DWORD s = (DWORD)(msg->size - A3P_HEADER_SIZE);
 	*(msg->buff + 8) = (BYTE)(s >> 24);
 	*(msg->buff + 9) = (BYTE)(s >> 16);
 	*(msg->buff + 10) = (BYTE)(s >> 8);
@@ -257,7 +253,7 @@ void a3p_add_header(a3p_msg *msg)
 // datasize = message buffer size (payload struct size  + 16)
 void a3p_add_checksum(a3p_msg *msg)
 {
-	// cs = (BYTE)sum af all payload (includeing fixed)
+	// cs = (BYTE)sum af all payload (including fixed)
 	BYTE cs = 0x00;
 	for (unsigned int i = 12; i < msg->size - 2; i++) cs += *(msg->buff + i);
 
@@ -269,12 +265,12 @@ void a3p_add_checksum(a3p_msg *msg)
 
 void a3p_CMD_SET_SYSTEMTIME(a3p_msg *msg, float time_s)
 {
-	msg->size = 16 + sizeof(MP_SET_SYSTEMTIME);
+	msg->size = A3P_HEADER_SIZE + sizeof(MP_SET_SYSTEMTIME);
 	msg->buff = new BYTE[msg->size];
 
 	// fill required fields
 	MP_SET_SYSTEMTIME s = {};
-	s.m_dwCmd = CMD_SET_SYSTEMTIME;
+	s.m_dwCmd = A3P_CMD_SET_SYSTEMTIME;
 	MsTime t = {};
 	t.Second = 0x20902cAF;// (unsigned long)time_s;
 	t.Us100 = 0x2225;//(unsigned short)((time_s - t.Second) * 10000);
@@ -282,56 +278,152 @@ void a3p_CMD_SET_SYSTEMTIME(a3p_msg *msg, float time_s)
 	s.m_3RD_SwitchON = 0X05A;
 
 	// put in buffer
-	memcpy(msg->buff + 16, &s, sizeof(s));
+	memcpy(msg->buff + A3P_HEADER_SIZE, &s, sizeof(s));
 
 	// add header and checksum
 	a3p_add_header(msg);
 	a3p_add_checksum(msg);
 }
 
-void a3p_CMD_3RD_SDU(a3p_msg *msg, bool mode_3dr_on, WORD ChNum, WORD ChCount)
+void a3p_CMD_3RD_SDU(
+	a3p_msg *msg, 
+	WORD ChNum,
+	WORD ChCount, 
+	bool mode_3dr_on)
 {
-	msg->size = 16 + sizeof(MP_3RD_SDU);
+	msg->size = A3P_HEADER_SIZE + sizeof(MP_3RD_SDU);
 	msg->buff = new BYTE[msg->size];
 
 	// fill required fields
 	MP_3RD_SDU s = {};
-	s.m_dwCmd = CMD_3RD_SDU;
+	s.m_dwCmd = A3P_CMD_3RD_SDU;
 	s.m_wChannelNumber = ChNum;
 	s.m_wTotalChannelNumber = ChCount;
 	if (mode_3dr_on) s.m_btOnSwitch = 0x01;
 	else s.m_btOnSwitch = 0x00;
 
 	// put in buffer
-	memcpy(msg->buff + 16, &s, sizeof(s));
+	memcpy(msg->buff + A3P_HEADER_SIZE, &s, sizeof(s));
 
 	// add header and checksum
 	a3p_add_header(msg);
 	a3p_add_checksum(msg);
 }
 
+void a3p_CMD_3RD_CTRL_TYPE(a3p_msg *msg, WORD ChNum, WORD ChCount,
+	float hVoltClamp,
+	float lVoltClamp,
+	WORD ctrlType,
+	BYTE currentRange,
+	BYTE voltageRange,
+	float ctrlVal[4],
+	WORD ctrlValType[4])
+{
+	msg->size = A3P_HEADER_SIZE + sizeof(MP_3RD_CTRLTYPE);
+	msg->buff = new BYTE[msg->size];
 
+	MP_3RD_CTRLTYPE s = {};
+	s.m_dwCmd = A3P_CMD_3RD_CTRLTYPE;
+	s.m_wChannelNumber = ChNum;
+	s.m_wTotalChannelNumber = ChCount;
+	s.m_fVclampHigh = hVoltClamp;
+	s.m_fVclampLow = lVoltClamp;
 
-// TODO: other commands
+	ST_STEPCONTROL_DATA d = {};
+	d.m_wCtrlType = ctrlType;
+	d.m_btCurrentRange = currentRange;
+	d.m_btVoltageRange = voltageRange;
 
+	for (int i = 0; i < 4; i++) {
+		d.m_fCtrlVal[i] = ctrlVal[i];
+		d.m_wCtrlVal_Type[i] = ctrlValType[i];
+	}
+	s.m_st_CtrlData = d;
 
+	// add header and checksum
+	a3p_add_header(msg);
+	a3p_add_checksum(msg);
+}
+
+void a3p_CMD_3RD_SAMERANGE_CTRLTYPE(
+	a3p_msg *msg,
+	WORD ChNum,
+	WORD ChCount,
+	WORD ctrlType,
+	BYTE currentRange,
+	BYTE voltageRange,
+	float ctrlVal[4],
+	WORD ctrlValType[4])
+{
+	msg->size = A3P_HEADER_SIZE + sizeof(MP_3RD_SAMERANGE_CTRLTYPE);
+	msg->buff = new BYTE[msg->size];
+
+	MP_3RD_SAMERANGE_CTRLTYPE s = {};
+	s.m_dwCmd = A3P_CMD_3RD_SAMERANGE_CTRLTYPE;
+	s.m_wChannelNumber = ChNum;
+	s.m_wTotalChannelNumber = ChCount;
+
+	ST_STEPCONTROL_DATA d = {};
+	d.m_wCtrlType = ctrlType;
+	d.m_btCurrentRange = currentRange;
+	d.m_btVoltageRange = voltageRange;
+
+	for (int i = 0; i < 4; i++) {
+		d.m_fCtrlVal[i] = ctrlVal[i];
+		d.m_wCtrlVal_Type[i] = ctrlValType[i];
+	}
+	s.m_st_CtrlData = d;
+
+	// add header and checksum
+	a3p_add_header(msg);
+	a3p_add_checksum(msg);
+}
+
+void a3p_CMD_3RD_READDATAORSTATE(
+	a3p_msg *msg,
+	WORD ChNum,
+	WORD ChCount,
+	bool readData,
+	bool readState)
+{
+
+	msg->size = A3P_HEADER_SIZE + sizeof(MP_INDEPENDENT_READDATAORSTATE);
+	msg->buff = new BYTE[msg->size];
+
+	MP_INDEPENDENT_READDATAORSTATE s = {};
+	s.m_dwCmd = A3P_CMD_3RD_READDATAORSTATE;
+	s.m_wChannelNumber = ChNum;
+	s.m_wTotalChannelNumber = ChCount;
+	s.m_btIsReadData = readData ? 1 : 0;
+	s.m_btIsState = readState ? 1 : 0;
+
+	// add header and checksum
+	a3p_add_header(msg);
+	a3p_add_checksum(msg);
+}
+
+// TODO
+// A3P_CMD_3RD_INFOCFG
 
 // IN MESSAGES /////////////////////////////////////////////////////////////////
 
-int a3p_CONFIRM_FEEDBAK_size() {
-	return 16 + sizeof(MP_CONFIRM_FEEDBACK);
+int a3p_CONFIRM_FEEDBACK_size() {
+	return A3P_HEADER_SIZE + sizeof(MP_CONFIRM_FEEDBACK);
 }
 
-int a3p_parse_CONFIRM_FEEDBACK(const a3p_msg *msg, bool *success, DWORD code)
+int a3p_parse_CONFIRM_FEEDBACK(
+	const a3p_msg *msg, 
+	bool *success, 
+	DWORD code)
 {
 	// control expected size
-	if (msg->size != (16 + sizeof(MP_CONFIRM_FEEDBACK))) return -1;
+	if (msg->size != (A3P_HEADER_SIZE + sizeof(MP_CONFIRM_FEEDBACK))) return -1;
 
 	// parse message in struct
 	MP_CONFIRM_FEEDBACK s = {};
-	memcpy(&s, msg->buff+16, sizeof(s));
+	memcpy(&s, msg->buff+ A3P_HEADER_SIZE, sizeof(s));
 
-	// TODO: control checksum return -2
+	// TODO: control checksum 
 
 	// control code 
 	if (s.m_dwCmd != code) return -2;
@@ -342,7 +434,43 @@ int a3p_parse_CONFIRM_FEEDBACK(const a3p_msg *msg, bool *success, DWORD code)
 	return 0;
 }
 
+int a3p_parse_READDATAORSTATE_FEEDBACK(
+	const a3p_msg *msg,
+	WORD *ChNum,
+	WORD *ChCount,
+	bool *readData,
+	bool *readState,
+	BYTE controlState[A3P_MAXCHANNELNO],
+	float current[A3P_MAXCHANNELNO],
+	float voltage[A3P_MAXCHANNELNO]
+)
+{
+	// control expected size
+	if (msg->size != (A3P_HEADER_SIZE + sizeof(MP_INDEPENDENT_READDATAORSTATE_FEEDBACK))) return -1;
 
+	// parse message in struct
+	MP_INDEPENDENT_READDATAORSTATE_FEEDBACK s = {};
+	memcpy(&s, msg->buff + A3P_HEADER_SIZE, sizeof(s));
 
+	// TODO: control checksum 
 
-// TODO: other messages
+	// control code 
+	if (s.m_dwCmd != A3P_CMD_3RD_READDATAORSTATE_FEEDBACK) return -2;
+
+	// parse message content
+	*ChNum = s.m_wChannelNumber;
+	*ChCount = s.m_wTotalChannelNumber;
+	*readData = (s.m_btIsReadData != 0);
+	*readState = (s.m_btIsState != 0);
+	for (int i = 0; i < A3P_MAXCHANNELNO; i++) {
+		controlState[i] = s.m_st_Read_Value[i].m_btControlState;
+		current[i] = s.m_st_Read_Value[i].m_fCurrent;
+		voltage[i] = s.m_st_Read_Value[i].m_fVoltage;
+	}
+
+	return 0;
+}
+
+// TODO
+// A3P_CMD_3RD_ACTIONDONE                  (0XA9EDA800)
+// A3P_CMD_SCHEDULE_REPORT_LOGDATA_DELTA   (0XD9418100)

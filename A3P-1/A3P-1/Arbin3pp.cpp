@@ -1,5 +1,4 @@
 // Arbin 3rd party protocol functions
-// (c)2017 Matteo Lucarelli
 
 #include "stdafx.h"
 #include "Arbin3pp.h"
@@ -127,7 +126,7 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 
 			// send CMD_SET_SYSTEMTIME
 			a3p_msg sst;
-			a3p_CMD_SET_SYSTEMTIME(&sst, (float)UX_TO_ARBIN_TIME(time(NULL)));
+			a3p_CMD_SET_SYSTEMTIME(&sst, (float)A3P_UX_TO_ARBIN_TIME(time(NULL)));
 
 			WaitForSingleObject(gCh1Mutex, INFINITE);
 
@@ -275,18 +274,18 @@ int a3p_3rd_mode(bool enable) {
 
 	// send CMD_SET_SYSTEMTIME
 	a3p_msg sdu;
-	a3p_CMD_3RD_SDU(&sdu, enable, A3P_DEFAULT_CH_NUM, A3P_DEFAULT_CH_COUNT);
+	a3p_CMD_3RD_SDU(&sdu, A3P_DEFAULT_CH_NUM, A3P_DEFAULT_CH_COUNT, enable);
 
 	WaitForSingleObject(gCh1Mutex, INFINITE);
 
 	if (a3p_write(gCh1Sock, sdu, "CH1") == 0) {
 
 		// get answer
-		a3p_msg ans(a3p_CONFIRM_FEEDBAK_size());
+		a3p_msg ans(a3p_CONFIRM_FEEDBACK_size());
 
 		if (a3p_read(gCh1Sock,&ans,"CH1")==0) {
 			
-			a3p_parse_CONFIRM_FEEDBACK(&ans, &success, CMD_3RD_SDU_FEEDBACK);
+			a3p_parse_CONFIRM_FEEDBACK(&ans, &success, A3P_CMD_3RD_SDU_FEEDBACK);
 		}
 	}
 	ReleaseMutex(gCh1Mutex);

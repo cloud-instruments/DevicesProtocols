@@ -1,7 +1,4 @@
 // Test application for Arbin 3rd party protocol
-// (c)2017 Matteo Lucarelli
-// 20170510 - V0.1
-// 20170511 - V0.2 : new Arbin protocol version (1.1)
 
 #include "stdafx.h"
 #include "Arbin3pp.h"
