@@ -18,13 +18,19 @@ std::string logpath;
 std::ofstream *logStream = NULL;
 streamlog *plog = NULL;
 
+#define CHNUM   (0)
+#define CHCOUNT (1)
+
 void print_usage(const char *exe)
 {
-	std::cerr << "usage: " << exe << " [-0|-1|-2] device-ip-addr" << std::endl;
-	std::cerr <<   "-0: (DEFAULT) connect and show incoming messages" << std::endl;
+	std::cerr << "Test application for Arbin 3rd party protocol" << std::endl;
+	std::cerr << "usage: " << exe << " [-0|-1|-2-3] device-ip-addr" << std::endl;
+	std::cerr << "  -0: (DEFAULT) connect and show incoming messages" << std::endl;
 	std::cerr << "  -1: as 0 + send CMD_SET_SYSTEMTIME every 5s" << std::endl;
 	std::cerr << "  -2: as 1 + change device third party mode" << std::endl;
-	std::cerr << "  -l path : enable logfile" << std::endl;
+	std::cerr << "  -3: as 2 + ask for data/state each second" << std::endl;
+	std::cerr << "  -l PATH : enable logfile" << std::endl;
+	std::cerr << "  -h: show this help" << std::endl;
 }
 
 // ctrl-c handler
@@ -43,6 +49,7 @@ BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
 	}
 }
 
+// show msg buffer as hex
 void show_buff(a3p_msg msg){
 
 	for (unsigned int i = 0; i <  msg.size; i++) {
@@ -67,6 +74,11 @@ int main(int argc, char **argv)
 	int expected_argc = 2;
 
 	for (int i = 1; i < argc; i++){
+
+		if (!strcmp(argv[i], "-h")) {
+			print_usage(argv[0]);
+			return 0;
+		}
 
 		// enable log file
 		if (!strcmp(argv[i], "-l")) {
@@ -124,26 +136,29 @@ int main(int argc, char **argv)
 		if (plog) *plog << STREAMLOG_FINFO << "-0" << std::endl;
 	}
 
-	if (plog) *plog << STREAMLOG_FINFO << "connecting " << argv[argc - 1] << std::endl;
+	if (plog) *plog << "connecting " << argv[argc - 1] << std::endl;
 	std::cout << "connecting " << argv[argc-1] << std::endl;
 
 	a3p_init(argv[argc - 1]);
 
-	if (a3p_connect(sst,sdu) != 0) {
+	if (a3p_connect(CHNUM,CHCOUNT,sst,sdu) != 0) {
 
-		if (plog) *plog << STREAMLOG_FINFO << "Connection refused" << streamlog::error << std::endl;
+		if (plog) *plog << "Connection refused" << streamlog::error << std::endl;
 		std::cerr << "Connection refused" << std::endl;
 
 		std::string msg;
 		while (a3p_get_message(&msg) == 0) {
 
-			if (plog) *plog << STREAMLOG_FINFO << "a3p:" << msg << streamlog::warning << std::endl;
+			if (plog) *plog << "a3p:" << msg << streamlog::warning << std::endl;
 			std::cerr << "a3p:" << msg << std::endl;
 			Sleep(100);
 		}
 
 		return -1;
 	}
+
+	int count = 0;
+	bool dataorstate = true;
 
 	// connection test
 	std::cout << "[CTRL][C] to gracefully disconnect" << std::endl;
@@ -152,34 +167,90 @@ int main(int argc, char **argv)
 		std::string msg;
 		while (a3p_get_message(&msg) == 0) {
 
-			if (plog) *plog << STREAMLOG_FINFO << "a3p:" << msg << streamlog::warning << std::endl;
+			if (plog) *plog << "a3p:" << msg << streamlog::warning << std::endl;
 			std::cout << "a3p:" << msg << std::endl;
 			Sleep(100);
 		}
 
 		a3p_msg mch1;
-		if (a3p_get_ch1(&mch1) == 0) {
+		while (a3p_get_ch1(&mch1) == 0) {
 
-			if (plog) *plog << STREAMLOG_FINFO << "ch1 received " << std::dec << mch1.size << " bytes" << std::endl;
+			if (plog) *plog << "ch1 received " << std::dec << mch1.size << " bytes" << std::endl;
 			std::cout << "ch1 received " << std::dec << mch1.size << " bytes" << std::endl;
 			show_buff(mch1);
+			Sleep(100);
 		}
 
 		a3p_msg mch2;
-		if (a3p_get_ch2(&mch2) == 0) {
-			if (plog) *plog << STREAMLOG_FINFO << "ch2 received " << std::dec << mch1.size << " bytes" << std::endl;
+		while (a3p_get_ch2(&mch2) == 0) {
+			if (plog) *plog << "ch2 received " << std::dec << mch1.size << " bytes" << std::endl;
 			std::cout << "ch2 received " << std::dec << mch2.size << " bytes" << std::endl;
 			show_buff(mch2);
+			Sleep(100);
 		}
 
 		Sleep(100);
+
+		count++;
+		if (count == 10) {
+
+			if (plog) *plog << "Sending readdataorstate "<< (dataorstate?"data":"state") << streamlog::trace << std::endl;
+			std::cout << "Sending readdataorstate " << (dataorstate ? "data" : "state") << std::endl;
+
+			BYTE controlState[A3P_MAXCHANNELNO];
+			float current[A3P_MAXCHANNELNO];
+			float voltage[A3P_MAXCHANNELNO];
+
+			int ret = a3p_readdataorstate(CHNUM, CHCOUNT, dataorstate, controlState, current, voltage);
+			if (ret == 0) {
+
+				int i;
+
+				if (plog) *plog << "controlState: ";
+				std::cout << "controlState: ";
+				for (i = 0; i < A3P_MAXCHANNELNO; i++) {
+					if (plog) *plog << (int)controlState[i] << " ";
+					std::cout << (int)controlState[i] << " ";
+				}
+				if (plog) *plog << streamlog::debug << std::endl;
+				std::cout << std::endl;
+
+				if (plog) *plog << "current: ";
+				std::cout << "current: ";
+				for (i = 0; i < A3P_MAXCHANNELNO; i++) {
+					if (plog) *plog << current[i] << " ";
+					std::cout << current[i] << " ";
+				}
+				if (plog) *plog << streamlog::debug << std::endl;
+				std::cout << std::endl;
+
+				if (plog) *plog << "voltage: ";
+				std::cout << "voltage: ";
+				for (i = 0; i < A3P_MAXCHANNELNO; i++) {
+					if (plog) *plog << voltage[i] << " ";
+					std::cout << voltage[i] << " ";
+				}
+				if (plog) *plog << streamlog::debug << std::endl;
+				std::cout << std::endl;
+			}
+			else {
+				if (plog) *plog << "readdataorstate return "<< ret << streamlog::error << std::endl;
+				std::cerr << "readdataorstate return " << ret << std::endl;
+			}
+
+
+			count = 0;
+			dataorstate = !dataorstate;
+		}
+
+
 	}
 
 	if (plog) *plog << STREAMLOG_FINFO << "disconnecting" << std::endl;
 	std::cout << "disconnecting" << std::endl;
 
-	a3p_disconnect();
-	a3p_delete();
+	a3p_disconnect(CHNUM, CHCOUNT);
+	a3p_delete(CHNUM, CHCOUNT);
 
 	if (plog) delete plog;
 	if (logStream) delete logStream;

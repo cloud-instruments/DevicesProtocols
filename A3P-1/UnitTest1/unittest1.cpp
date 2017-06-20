@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
-#include "../A3P-1/win32_tcp_socket.h"
+#include "..\w32_tcp_socket_test\win32_tcp_socket.h"
 
 #include <iostream>
 
@@ -41,8 +41,5 @@ namespace UnitTest1
 				w32_tcp_socket_close(&csock);
 			}
 		}*/
-
-
-
 	};
 }

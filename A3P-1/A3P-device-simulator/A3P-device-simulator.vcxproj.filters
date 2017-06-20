@@ -24,10 +24,10 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\A3P-1\win32_tcp_socket.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="..\w32_tcp_socket_test\win32_tcp_socket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <ClCompile Include="A3P-device-simulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\A3P-1\win32_tcp_socket.cpp">
+    <ClCompile Include="..\w32_tcp_socket_test\win32_tcp_socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

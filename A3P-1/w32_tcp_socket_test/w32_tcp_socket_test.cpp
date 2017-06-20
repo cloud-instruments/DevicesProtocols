@@ -4,7 +4,7 @@
 // 20170510 v0.1 : initial version
 
 #include "stdafx.h"
-#include "../A3P-1/win32_tcp_socket.h"
+#include "win32_tcp_socket.h"
 #include <string>
 #include <iostream>
 

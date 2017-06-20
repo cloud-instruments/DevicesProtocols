@@ -147,15 +147,16 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\w32_tcp_socket_test\win32_tcp_socket.h" />
     <ClInclude Include="Arbin3pp.h" />
     <ClInclude Include="Arbin3ppMessages.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="streamlog.h" />
-    <ClInclude Include="win32_tcp_socket.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\w32_tcp_socket_test\win32_tcp_socket.cpp" />
     <ClCompile Include="A3P-1.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
@@ -168,9 +169,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="win32_tcp_socket.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
