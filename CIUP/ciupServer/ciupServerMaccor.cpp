@@ -8,13 +8,19 @@ static bool gRun = false;
 // LOGS MANAGEMENT /////////////////////////////////////////////////////////////
 
 static std::queue<ciupLog> gMaccorLogQueue;
+static bool csMaccorLogInitialized = false;
 static CRITICAL_SECTION csMaccorLog;
+static streamlog::level logFilter = streamlog::debug;
 
-// TODO: set loglevel to avoid queueing filtered logs
+void maccorSetLogFilter(streamlog::level filter)
+{
+	logFilter = filter;
+}
 
-// enqueue new log
 template< typename ... Args > void maccorQueueLog(streamlog::level level, Args const& ... args)
 {
+	if (level < logFilter) return;
+
 	std::ostringstream stream;
 	using List = int[];
 	(void)List {
@@ -26,20 +32,20 @@ template< typename ... Args > void maccorQueueLog(streamlog::level level, Args c
 	log.level = level;
 	log.descr = stream.str();
 
-	EnterCriticalSection(&csMaccorLog);
+	if (csMaccorLogInitialized) EnterCriticalSection(&csMaccorLog);
 	gMaccorLogQueue.push(log);
 	if (gMaccorLogQueue.size() > CIUP_LOG_MAX_STORE) gMaccorLogQueue.pop();
-	LeaveCriticalSection(&csMaccorLog);
+	if (csMaccorLogInitialized) LeaveCriticalSection(&csMaccorLog);
 }
 
 int maccorGetLog(ciupLog *log)
 {
 	if (gMaccorLogQueue.empty()) return -1;
 
-	EnterCriticalSection(&csMaccorLog);
+	if (csMaccorLogInitialized) EnterCriticalSection(&csMaccorLog);
 	*log = gMaccorLogQueue.front();
 	gMaccorLogQueue.pop();
-	LeaveCriticalSection(&csMaccorLog);
+	if (csMaccorLogInitialized) LeaveCriticalSection(&csMaccorLog);
 
 	return 0;
 }
@@ -128,7 +134,10 @@ int serverMaccorStart()
 	if (gRun) return 0;
 	gRun = true;
 
-	InitializeCriticalSection(&csMaccorLog);
+	if (!csMaccorLogInitialized) {
+		InitializeCriticalSection(&csMaccorLog);
+		csMaccorLogInitialized = true;
+	}
 
 	HANDLE hThread = CreateThread(0, 0, serverMaccorWaitThread, NULL, 0, NULL);
 	if (hThread == NULL) {
@@ -146,6 +155,9 @@ int serverMaccorStop()
 	if (!gRun) return 0;
 	gRun = false;
 
-	DeleteCriticalSection(&csMaccorLog);
+	if (csMaccorLogInitialized) {
+		csMaccorLogInitialized = false;
+		DeleteCriticalSection(&csMaccorLog);
+	}
 	return 0;
 }

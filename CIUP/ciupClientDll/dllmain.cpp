@@ -18,7 +18,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	case DLL_THREAD_DETACH:
 		break;
 	case DLL_PROCESS_DETACH:
-		// TODO: stop all receivers
 		break;
 	}
 	return TRUE;

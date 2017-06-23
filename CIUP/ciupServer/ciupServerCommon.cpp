@@ -4,6 +4,7 @@
 
 // datapoints buffer ///////////////////////////////////////////////////////////
 
+static bool csServerDataInitialized = false;
 static CRITICAL_SECTION csServerData;
 
 struct {
@@ -13,10 +14,10 @@ struct {
 
 void ciupServerEnqueueDatapoint(ciupDataPoint &p)
 {
-	EnterCriticalSection(&csServerData);
+	if (csServerDataInitialized) EnterCriticalSection(&csServerData);
 	gPointBuffer.p[gPointBuffer.i] = p;
 	gPointBuffer.i = ++(gPointBuffer.i) % CIUP_POINT_MAX_STORE;
-	LeaveCriticalSection(&csServerData);
+	if (csServerDataInitialized) LeaveCriticalSection(&csServerData);
 }
 
 int ciupServerDatapointIndex()
@@ -27,13 +28,20 @@ int ciupServerDatapointIndex()
 // LOGS MANAGEMENT /////////////////////////////////////////////////////////////
 
 static std::queue<ciupLog> gServerLogQueue;
+static bool csServerLogInitialized = false;
 static CRITICAL_SECTION csServerLog;
+static streamlog::level logFilter = streamlog::debug;
 
-// TODO: set loglevel to avoid queueing filtered logs
+void ciupServerSetLogFilter(streamlog::level filter)
+{
+	logFilter = filter;
+}
 
 // enqueue new log
 template< typename ... Args > void ciupServerQueueLog(streamlog::level level, Args const& ... args)
 {
+	if (level < logFilter) return;
+
 	std::ostringstream stream;
 	using List = int[];
 	(void)List {
@@ -45,22 +53,49 @@ template< typename ... Args > void ciupServerQueueLog(streamlog::level level, Ar
 	log.level = level;
 	log.descr = stream.str();
 
-	EnterCriticalSection(&csServerLog);
+	if (csServerLogInitialized) EnterCriticalSection(&csServerLog);
 	gServerLogQueue.push(log);
 	if (gServerLogQueue.size() > CIUP_LOG_MAX_STORE) gServerLogQueue.pop();
-	LeaveCriticalSection(&csServerLog);
+	if (csServerLogInitialized) LeaveCriticalSection(&csServerLog);
 }
 
 int ciupServerGetLog(ciupLog *log)
 {
 	if (gServerLogQueue.empty()) return -1;
 
-	EnterCriticalSection(&csServerLog);
+	if (csServerLogInitialized) EnterCriticalSection(&csServerLog);
 	*log = gServerLogQueue.front();
 	gServerLogQueue.pop();
-	LeaveCriticalSection(&csServerLog);
+	if (csServerLogInitialized) LeaveCriticalSection(&csServerLog);
 
 	return 0;
+}
+
+// SERVER INFO /////////////////////////////////////////////////////////////////////
+
+ciupServerInfo gServerInfo;
+
+void setServerStatus(ciupStatus status)
+{
+	gServerInfo.status = status;
+}
+
+void setServerInfo(ciupStatus status, const char* idstr, ciupServerRunMode mode) {
+
+	gServerInfo.status = status;
+	strncpy_s(gServerInfo.id, idstr, CIUP_MAX_STRING_SIZE);
+	gServerInfo.mode = mode;
+}
+
+int sendServerInfo(w32_socket *s) {
+
+	int ret = CIUP_ERR_SOCKET;
+
+	void *ans = ciupBuildMessage(CIUP_MSG_SERVERINFO, &gServerInfo, sizeof(ciupServerInfo));
+	if (w32_tcp_socket_write(s, ans, CIUP_MSG_SIZE(sizeof(d)), 0) == CIUP_MSG_SIZE(sizeof(d))) ret = CIUP_NO_ERR;
+	delete[] ans;
+
+	return ret;
 }
 
 // CONNECTION THREAD ///////////////////////////////////////////////////////////////
@@ -93,23 +128,6 @@ int ciupServerQueueIndex(size_t connection)
 {
 	if (connection >= ciupConnectionList.size()) return -1;
 	return ciupConnectionList[connection]->qIndex;
-}
-
-int sendServerInfo(w32_socket *s) {
-
-	// TODO: set server info function
-
-	int ret = CIUP_ERR_SOCKET;
-
-	ciupServerInfo d;
-	d.status = CIUP_ST_WORKING;
-	strncpy_s(d.id, "ciupServerTest", CIUP_MAX_STRING_SIZE);
-
-	void *ans = ciupBuildMessage(CIUP_MSG_SERVERINFO, &d, sizeof(d));
-	if (w32_tcp_socket_write(s, ans, CIUP_MSG_SIZE(sizeof(d)), 0) == CIUP_MSG_SIZE(sizeof(d))) ret = CIUP_NO_ERR;
-	delete[] ans;
-
-	return ret;
 }
 
 DWORD WINAPI connectionThread(LPVOID lpParam) {
@@ -292,10 +310,6 @@ DWORD WINAPI serverThread(LPVOID lpParam) {
 				ciupConnectionList.pop_back();
 				delete[] d;
 			}
-			/*if (SetThreadPriority(d->hThread, THREAD_PRIORITY_HIGHEST) == 0) {
-				ciupServerQueueLog(streamlog::error, "SetThreadPriority: ", GetLastError());
-			}*/
-
 			ciupServerQueueLog(streamlog::trace, "Started new connection T", d->hThread);
 		}
 		else {
@@ -313,8 +327,15 @@ int ciupServerStart(unsigned short port) {
 	// if is ON return
 	if (gServerThread != NULL) return 0;
 
-	InitializeCriticalSection(&csServerLog);
-	InitializeCriticalSection(&csServerData);
+	if (!csServerLogInitialized) {
+		InitializeCriticalSection(&csServerLog);
+		csServerLogInitialized = true;
+	}
+
+	if (!csServerDataInitialized) {
+		InitializeCriticalSection(&csServerData);
+		csServerDataInitialized = true;
+	}
 
 	// open socket
 	gServerSock = w32_tcp_socket_server_create(port);
@@ -333,7 +354,7 @@ int ciupServerStart(unsigned short port) {
 		return -2;
 	}
 
-	ciupServerQueueLog(streamlog::trace, "ciup server listening un UDP port ", port);
+	ciupServerQueueLog(streamlog::trace, "ciup server listening un TCP port ", port);
 	return 0;
 }
 
@@ -351,8 +372,15 @@ int ciupServerStop()
 	CloseHandle(gServerThread);
 	gServerThread = NULL;
 
-	DeleteCriticalSection(&csServerLog);
-	DeleteCriticalSection(&csServerData);
+	if (csServerLogInitialized) {
+		csServerLogInitialized = false;
+		DeleteCriticalSection(&csServerLog);
+	}
+
+	if (csServerDataInitialized) {
+		csServerDataInitialized = false;
+		DeleteCriticalSection(&csServerData);
+	}
 
 	return 0;
 }

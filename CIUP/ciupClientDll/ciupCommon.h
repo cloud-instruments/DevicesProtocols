@@ -1,4 +1,6 @@
 // Common definitions between CIUP client and server
+// must be included in C/C++ application to use ciupClientDll.dll
+
 // protocol definition:
 //  4 bytes: 'C','I','U','P'
 //  1 byte: MESSAGE TYPE (see #define CIUP_MSG_*)
@@ -11,7 +13,7 @@
 
 #include <Windows.h>
 
-// message protocol size size
+// message protocol header size
 #define CIUP_MSG_HSIZE (9)
 
 // position of payload inside message
@@ -28,9 +30,10 @@
 
 // message buffer size given the payload size
 //#define CIUP_MSG_SIZE(payload_size) ((payload_size)+CIUP_MSG_HSIZE)
+// message size is fixed to CIUP_MAX_MSG_SIZE to avoid TCP ip packet fragmentation 
 #define CIUP_MSG_SIZE(payload_size) (CIUP_MAX_MSG_SIZE)
 
-// extract payload size from mmessage pointer
+// extract payload size as unsigned int from message pointer
 #define CIUP_PAYLOAD_SIZE(pmsg) ((unsigned int)(*((BYTE*)pmsg+CIUP_PAYLOAD_POS-2)*256) + (unsigned int)(*((BYTE*)pmsg+CIUP_PAYLOAD_POS-1)))
 
 // ms timeout to stop threads
@@ -61,42 +64,50 @@
 #define CIUP_ERR_SYNTAX           (-5)
 #define CIUP_ERR_ID               (-6)
 #define CIUP_ERR_MAX_CONNECTIONS  (-7)
+#define CIUP_ERR_SIZE             (-8)
+#define CIUP_ERR_CHECKSUM         (-9)
 
 // server and connection status 
 enum ciupStatus {
-	CIUP_ST_UNKNOWN = 0,
-	CIUP_ST_IDLE    = 1,
-	CIUP_ST_WORKING = 2,
-	CIUP_ST_DISCONNECTED = 3
-	
-	// TODO
+	CIUP_ST_UNKNOWN      = 0,
+	CIUP_ST_IDLE         = 1,
+	CIUP_ST_WORKING      = 2,
+	CIUP_ST_CONNECTED    = 3,
+	CIUP_ST_DISCONNECTED = 4
+};
+
+// server run mode
+enum ciupServerRunMode {
+
+	RM_EMULATOR = 0,
+	RM_MACCOR   = 1,
+	RM_ARBIN    = 2
 };
 
 // strings for ciupStatus description
-#define CIUP_STATUS_DESCR(n) (n==CIUP_ST_WORKING?"WRK":\
-                              (n==CIUP_ST_IDLE?"IDL":\
-                               (n==CIUP_ST_DISCONNECTED?"DSC":\
-                                "UKN")))
+#define CIUP_STATUS_DESCR(n) (n==CIUP_ST_IDLE?"IDL":\
+                              (n==CIUP_ST_WORKING?"WRK":\
+                               (n==CIUP_ST_CONNECTED?"CNC":\
+                                (n==CIUP_ST_DISCONNECTED?"DNC":\
+                                 "UKN"))))
 
-// server infos packet
+// the server infos packet payload
 #pragma pack(1)
 typedef struct {
+
 	ciupStatus status = CIUP_ST_UNKNOWN;
 	char id[CIUP_MAX_STRING_SIZE] = {};
-
-	// TODO
-
+	ciupServerRunMode mode= RM_EMULATOR;
 
 } ciupServerInfo;
 #pragma pack()
 
-// data point packet
+// the data point packet payload
 #pragma pack(1)
 typedef struct {
 
 	USHORT counter;         // counter for messages sequence
 	USHORT channel;         // device channel of the data
-
 	float Stime = 0;        // data time in S
 	float Ktemp = 0;        // temperature in K
 	float Acurr = 0;        // current in A
@@ -115,7 +126,10 @@ void *ciupBuildMessage(
 	size_t payload_size=0        // payload size
 );
 
+// check the message correctness
+// returns CIUP_NO_ERR | CIUP_ERR_SIZE | CIUP_ERR_SYNTAX | CIUP_ERR_CHECKSUM
 int ciupCheckMessageSyntax(
 	void *msg,                   // message pointer
 	size_t msg_size              // size of message in bytes
 );
+

@@ -30,6 +30,12 @@
     <ClInclude Include="streamlog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\ciupClientDll\ciupClientDll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ciupClientDll\ciupCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

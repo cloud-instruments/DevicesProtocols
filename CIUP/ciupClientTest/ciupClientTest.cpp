@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 		Sleep(5000);
 
 		// ask server info every 5s
-		//ciupcInfo(id);
+		ciupcInfo(id);
 	}
 
 	ciupcStop(id);

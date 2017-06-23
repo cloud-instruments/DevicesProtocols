@@ -38,10 +38,23 @@ void *ciupBuildMessage(BYTE type, void* payload, size_t payload_size)
 
 int ciupCheckMessageSyntax(void *msg, size_t msg_size)
 {
-	int ret = CIUP_NO_ERR;
+	BYTE *m = (BYTE*)msg;
 
-	// TODO
-	// CIUP_ERR_SYNTAX
+	if (msg_size < CIUP_MSG_HSIZE) return CIUP_ERR_SIZE;
 
-	return ret;
+	size_t payload_size = m[5] * 256 + m[6];
+	if (msg_size != CIUP_MSG_SIZE(payload_size)) return CIUP_ERR_SIZE;
+
+	if (m[0] != 'C') return CIUP_ERR_SYNTAX;
+	if (m[1] != 'I') return CIUP_ERR_SYNTAX;
+	if (m[2] != 'U') return CIUP_ERR_SYNTAX;
+	if (m[3] != 'P') return CIUP_ERR_SYNTAX;
+
+	BYTE cs = 0x00;
+	for (unsigned int i = 0; i < msg_size - 2; i++) cs += m[i];
+	
+	if (cs != m[msg_size - 2]) return CIUP_ERR_CHECKSUM;
+	if ((0xFF-cs) != m[msg_size - 1]) return CIUP_ERR_CHECKSUM;
+
+	return CIUP_NO_ERR;
 }

@@ -9,6 +9,6 @@ Using the dll any application can connect to one or more ciup server to receive 
 
 To use it link to ciupClientDll.lib and include ciupClientDll.h and ciupCommon.h
 
-Exported functions are commented in .h files
+Exported functions are commented in ciupClientDll.h file
 
 See example of use in ciupClientTest (c++) and ciupClientTest-csc (c#)

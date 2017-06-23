@@ -23,8 +23,6 @@ typedef struct w32_socket_t{
 	SOCKET sock=INVALID_SOCKET;
 }w32_socket;
 
-// TODO: add WSA starup / WSA cleanup
-
 /// @brief   create a server socket on port
 /// @param   port port to use
 /// @return  socket, control lasterr for errors

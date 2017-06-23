@@ -23,13 +23,7 @@ static int gSleep = SENDER_SLEEP_DEFAULT;
 static bool gRun = true;
 
 // running mode
-enum tRunMode {
-
-	RM_EMULATOR = 0,
-	RM_MACCOR = 1,
-	RM_ARBIN = 2
-};
-static tRunMode gRunMode = RM_EMULATOR;
+static ciupServerRunMode gRunMode = RM_EMULATOR;
 
 // [CTRL][c] handler
 BOOL WINAPI HandlerRoutine(_In_ DWORD dwCtrlType) {
@@ -198,7 +192,10 @@ int main(int argc, char **argv)
 	// CRTL-C handler
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
-	// TODO: set server info
+	ciupServerSetLogFilter(logFilter);
+
+	// set server info
+	setServerInfo(CIUP_ST_IDLE, "ciupServer", gRunMode);
 
 	// start the server
 	if (ciupServerStart(port) != 0) {
@@ -222,9 +219,9 @@ int main(int argc, char **argv)
 
 		std::cout << "Starting Maccor mode" << std::endl;
 		if (plog) *plog << "Starting Maccor mode" << streamlog::trace << std::endl;
-
+		
+		maccorSetLogFilter(logFilter);
 		serverMaccorStart();
-
 	}
 	else if (gRunMode == RM_ARBIN) {
 
@@ -248,6 +245,8 @@ int main(int argc, char **argv)
 	DWORD cPrev = 0;
 	DWORD tNow;
 	double mS;
+
+	setServerStatus(CIUP_ST_WORKING);
 
 	while (gRun) {
 
@@ -291,9 +290,6 @@ int main(int argc, char **argv)
 				
 				tPrev = GetTickCount();
 				cPrev = c;
-
-				// TODO: maccor/arbin performance
-
 			}
 		}
 

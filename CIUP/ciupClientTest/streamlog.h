@@ -1,5 +1,5 @@
 // (C)2017 Matteo Lucarelli All rights reserved
-
+// streamlog implementation (use stream-like sintax to write to file)
 
 #ifndef STREAMLOG_H_INCLUDED
 #define STREAMLOG_H_INCLUDED

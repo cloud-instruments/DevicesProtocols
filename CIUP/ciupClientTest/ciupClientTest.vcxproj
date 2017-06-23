@@ -149,6 +149,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ciupClientDll\ciupClientDll.h" />
+    <ClInclude Include="..\ciupClientDll\ciupCommon.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="streamlog.h" />

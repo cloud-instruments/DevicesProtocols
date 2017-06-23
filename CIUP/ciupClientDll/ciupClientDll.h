@@ -1,4 +1,5 @@
 // interface file for CIUP client dll exported functions
+// must be included in C/C++ application to use ciupClientDll.dll
 
 #pragma once
 
@@ -10,6 +11,8 @@
 // Callback definitions ////////////////////////////////////////////////////////
 
 // Data callback definition
+// this callback will be called by ciupClientDll for any incoming data
+// NOTE: cannot be a time consuming function
 typedef void (__stdcall *ciupDataCb)(
 	int messageType,          // message type (CIUP_MSG_* defines)
 	const char* data,         // incoming message as json string
@@ -17,6 +20,8 @@ typedef void (__stdcall *ciupDataCb)(
 );
 
 // Error callback definition
+// this callback will be called by ciupClientDll to notify errors
+// error codes are defined in ciupCommon.h
 typedef void(__stdcall *ciupErrorCb)(
 	int errorCode,            // error code
 	const char* errorDescr,   // error description
@@ -26,10 +31,10 @@ typedef void(__stdcall *ciupErrorCb)(
 // exported functions //////////////////////////////////////////////////////////
 extern "C" {
 
-	// connect and start receving data 
+	// connect to a server and start receving data 
 	// return >0 : ID of the connection instance
 	// return <0 : error
-	// WARN: cb should not be time consuming functions
+	// incoming data will be passed to dataCb
 	__declspec(dllexport) int __stdcall ciupcConnect(
 		const char *addr,		 // server IP address
 		unsigned short port,	 // server TCP port
@@ -38,6 +43,7 @@ extern "C" {
 	);
 
 	// ask a serverinfo message
+	// incoming data will be passed to dataCb
 	__declspec(dllexport) void __stdcall ciupcInfo(
 		int ID                // id of connection instance
 	);
@@ -47,7 +53,7 @@ extern "C" {
 		int ID                // id of connection instance
 	);
 
-	// use this to pause the transmission if required
+	// use this to pause the transmission when required
 	__declspec(dllexport) void __stdcall ciupcStop(
 		int ID                // id of connection instance
 	);

@@ -1,4 +1,5 @@
 ﻿// test application for ciupClientDll
+// example of typical use for C#
 
 using System;
 
@@ -76,7 +77,7 @@ namespace ciupClientTest_csc
             int expected_argc = 2;
             for (int i = 0; i < args.Length; i++)
             {
-
+                // print help
                 if (args[i] == "-h")
                 {
                     print_usage();
@@ -149,6 +150,7 @@ namespace ciupClientTest_csc
             printLog(logLevel.trace, "Connecting to ", addr, ":", Convert.ToString(port));
             Console.WriteLine("Connecting to {0}:{1}", addr, port);
 
+            // connect to the ciupServer
             NativeMethods.ciupDataCbDelegate pDataCb = ciupDataCb;
             NativeMethods.ciupErrorCbDelegate pErrorCb = ciupErrorCb;
             int id = NativeMethods.ciupcConnect(addr, port, pDataCb, pErrorCb);
@@ -173,9 +175,12 @@ namespace ciupClientTest_csc
             while (run)
             {
                 System.Threading.Thread.Sleep(5000);
+
+                // discomment to receive some serverinfo packets
                 //NativeMethods.ciupcInfo(id);
             }
 
+            // close connection
             NativeMethods.ciupcStop(id);
             NativeMethods.ciupcDisconnect(id);
         }
@@ -194,10 +199,8 @@ namespace ciupClientTest_csc
 
             try
             {
-                //System.IO.File.AppendAllText(logPath, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " " + label + " " + String.Join("", args) + "\r\n");
-                System.IO.StreamWriter w = System.IO.File.AppendText(logPath);
+                 System.IO.StreamWriter w = System.IO.File.AppendText(logPath);
                 w.WriteLine("{0} {1} {2}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"), label , String.Join("", args));
-                //w.Flush();
                 w.Close();
             }
             catch

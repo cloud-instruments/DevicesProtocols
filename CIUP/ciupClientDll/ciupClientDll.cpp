@@ -19,6 +19,7 @@ void ciupJsonSerialize(ciupServerInfo d, std::string &ret) {
 	oss << "{";
 	oss << "\"id\":\"" << d.id << "\",";
 	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\"";
+	oss << "\"mode\":\"" << (int)(d.mode) << "\"";
 	oss << "}";
 
 	ret = oss.str();
@@ -134,7 +135,9 @@ typedef struct ciupConnectionData_t{
 
 }ciupConnectionData;
 
-ciupConnectionData ciupConnectionsList[CIUP_MAX_CONNECTIONS];
+static bool csConnectionsListInitialized = false;
+static CRITICAL_SECTION csConnectionsList;
+static ciupConnectionData ciupConnectionsList[CIUP_MAX_CONNECTIONS];
 
 // returns the first place not currently used in ciupReceiverList
 int getFreeId() {
@@ -281,7 +284,12 @@ extern "C" {
 
 	__declspec(dllexport) int __stdcall ciupcConnect(const char *addr, unsigned short port, ciupDataCb dataCb, ciupErrorCb errorCb) {
 
-		// TODO: not thread safe
+		if (!csConnectionsListInitialized) {
+			InitializeCriticalSection(&csConnectionsList);
+			csConnectionsListInitialized = true;
+		}
+
+		EnterCriticalSection(&csConnectionsList);
 		int id = getFreeId();
 		if (id < 0) return CIUP_ERR_MAX_CONNECTIONS;
 
@@ -292,6 +300,7 @@ extern "C" {
 		}
 
 		ciupConnectionsList[id].setup(dataCb, errorCb, s, addr, port);
+		LeaveCriticalSection(&csConnectionsList);
 		ciupConnectionsList[id].hThread = CreateThread(0, 0, ciupConnectionThread, (LPVOID)id, 0, NULL);
 
 		ciupcStart(id);

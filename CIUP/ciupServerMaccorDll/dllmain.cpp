@@ -141,14 +141,6 @@ void TTestDataRevALog(TTestDataRevA* d) {
 		<< ", 'Mass':'" << d->Mass << "'"
 		<< streamlog::debug << std::endl;
 
-		/*
-		float   VRate;					//Not used yet
-		float	Prate;					//Not used yet
-		float	Rrate;					//Not used yet
-		float	Volume;					//Not used yet
-		float	Area;					//Not used yet
-		*/
-
 	for (int i = 0; i < sizeof(*d); ++i)
 		*gLog << std::hex << std::setfill('0') << std::setw(2) << (int)*((unsigned char*)d + i) << " ";
 	*gLog << streamlog::debug << std::endl;
@@ -270,8 +262,6 @@ __declspec(dllexport) int __stdcall OnLoadRevA(
 		TTestDataRevALog(TestData);
 	}
 
-	// TODO: callbacks
-
 	return 0;
 }
 
@@ -293,8 +283,6 @@ __declspec(dllexport) int __stdcall OnStepStartRevA(
 		TTestDataRevALog(TestData);
 	}
 
-	// TODO: callbacks
-
 	return 0;
 }
 
@@ -314,8 +302,6 @@ __declspec(dllexport) int __stdcall OnStepEndRevA(
 		TSStatusDataLog(StatusData);
 	}
 
-	// TODO: callbacks
-
 	return 0;
 }
 
@@ -327,8 +313,6 @@ __declspec(dllexport) int __stdcall OnUnLoadRevA(
 	PWriteSMBCallBack WriteSMBCallBack )
 {
 	if (gLog) *gLog << "OnUnLoadRevA channel:" << channel << streamlog::trace << std::endl;
-
-	// TODO: callbacks
 
 	return 0;
 }
@@ -350,25 +334,6 @@ __declspec(dllexport) int __stdcall OnSuspendRevA(
 		TTestDataRevALog(TestData);
 	}
 
-	// TODO: callbacks
-
-	/*TSMBGenericWriteData SMBGenericWriteData;
-	int i;
-	char s[] = "Hello World!";
-
-	i = ReportCallBack(s, 3, -37, TRUE);
-
-	SMBGenericWriteData.BusAddr = 0x16;
-	SMBGenericWriteData.BusType = 1;
-	SMBGenericWriteData.StartDataAddr = 1;
-	SMBGenericWriteData.EndDataAddr = 1;
-	SMBGenericWriteData.NumOfBytes = 2;
-	SMBGenericWriteData.CheckSum = 0;
-	SMBGenericWriteData.MinDelayToNext10ms = 100;
-	SMBGenericWriteData.Data[0] = 0x64;
-	SMBGenericWriteData.Data[1] = 0x00;
-	i = WriteSMBCallBack(&SMBGenericWriteData);*/
-
 	return 0;
 }
 
@@ -388,27 +353,6 @@ __declspec(dllexport) int __stdcall OnResumeRevA(
 		TSStatusDataLog(StatusData);
 		TTestDataRevALog(TestData);
 	}
-
-	// TODO: callbacks
-
-	/*
-	TSMBGenericWriteData SMBGenericWriteData;
-	int i;
-	char s[] = "Hello World!";
-
-	i = ReportCallBack(s, 1, 25, TRUE);
-
-	SMBGenericWriteData.BusAddr = 0x16;
-	SMBGenericWriteData.BusType = 1;
-	SMBGenericWriteData.StartDataAddr = 1;
-	SMBGenericWriteData.EndDataAddr = 1;
-	SMBGenericWriteData.NumOfBytes = 2;
-	SMBGenericWriteData.CheckSum = 0;
-	SMBGenericWriteData.MinDelayToNext10ms = 100;
-	SMBGenericWriteData.Data[0] = 0x2C;
-	SMBGenericWriteData.Data[1] = 0x01;
-	i = WriteSMBCallBack(&SMBGenericWriteData);
-	*/
 
 	return 0;
 }
@@ -497,8 +441,6 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 										// 4. Pause
 	} TOutData;
 	*/
-
-	// TODO: callbacks
 
 	// update channel counter
 	if (channel < CIUP_CH_MAX_COUNT) {
