@@ -150,7 +150,7 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(int channel, int unused_flag
 {
 	FILE *F;
 	float current = 0;
-
+	#pragma warning(disable : 4996)  
 	F = fopen("C:\\Maccor\\DEMO_readings.txt", "a");
 	fprintf(F, "TestTime: %f; Voltage: %f; Current: %f\n", StatusData->TestTime, StatusData->Voltage, StatusData->Current);
 	fclose(F);
