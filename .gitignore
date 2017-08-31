@@ -9,3 +9,6 @@
 *.user
 /A3P-1/ipch
 /A3P-1/A3P-device-simulator/Debug
+/A3P-1/A3P-cmd-console/Debug
+/A3P-1/.vs/A3P-1/v15
+/.vs
