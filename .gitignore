@@ -14,3 +14,15 @@
 /CIUP/.vs/CIUP/v15
 /CIUP/ciupClientTest-csc/obj/Debug
 /CIUP/Debug
+/CIUP/ciupClientDll/Release
+/CIUP/ciupClientTest/Release
+/CIUP/ciupClientTest-csc/obj/Release
+/CIUP/ciupServer/Release/ciupServer.tlog
+/CIUP/ciupServer/Release
+/CIUP/ciupServerMaccorDll/Release
+/CIUP/ciupServerMaccorDllTest/Release
+/CIUP/Release
+/CIUP/UnitTestCommon/Release
+/CIUP/UnitTestServer/Release
+/CIUP/w32_message_pipe_test/Release
+/CIUP/w32_tcp_socket_test/Release
