@@ -8,3 +8,6 @@ ARBIN device simulator
 - shows incoming data
 
 [CTRL][c] to stop
+
+TODO: answer to main A3p messages
+TODO: write on ch2 too

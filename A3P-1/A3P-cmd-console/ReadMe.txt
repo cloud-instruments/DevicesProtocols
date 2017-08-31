@@ -3,3 +3,5 @@
 ========================================================================
 
 Console commander for Arbin 3rd party protocol
+
+Planned only: NO FUNCTIONS YET

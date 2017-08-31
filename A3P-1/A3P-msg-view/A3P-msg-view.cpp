@@ -1,4 +1,4 @@
-// A3P-msg-view.cpp : Defines the entry point for the console application.
+// A3P-msg-view.cpp : simple app to show messages content
 //
 #include "stdafx.h"
 #include "../A3P-1/Arbin3ppMessages.h"
@@ -21,7 +21,7 @@ int main()
 	// TODO: cycle test for memory leak
 
 	a3p_msg msg;
-	a3p_CMD_SET_SYSTEMTIME(&msg, (float)UX_TO_ARBIN_TIME(time(NULL)));
+	a3p_CMD_SET_SYSTEMTIME(&msg, (float)A3P_UX_TO_ARBIN_TIME(time(NULL)));
 	show_buff(msg);
 
     return 0;

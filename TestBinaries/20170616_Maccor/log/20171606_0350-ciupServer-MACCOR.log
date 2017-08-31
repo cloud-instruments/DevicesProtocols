@@ -1,0 +1,57 @@
+2017-06-16 13:50:42 T Listening on port 10000
+2017-06-16 13:50:42 T Starting Maccor mode
+2017-06-16 13:50:42 T ciup server listening un UDP port 10000
+2017-06-16 13:50:42 T pipe Server awaiting client connection
+2017-06-16 13:50:43 T Generating 0 msg/s  (0msg in 1031 mS)
+2017-06-16 13:50:43 T Started new connection T0000010C
+2017-06-16 13:50:43 D T0000010C Received START command
+2017-06-16 13:50:43 T Client connected: creating a processing thread
+2017-06-16 13:50:44 T pipe Server awaiting client connection
+2017-06-16 13:50:44 T Generating 0.914077 msg/s  (1msg in 1094 mS)
+2017-06-16 13:50:44 T Connection 0 qIndex 1
+2017-06-16 13:50:46 T Generating 1.8018 msg/s  (2msg in 1110 mS)
+2017-06-16 13:50:46 T Connection 0 qIndex 3
+2017-06-16 13:50:47 T Generating 0.901713 msg/s  (1msg in 1109 mS)
+2017-06-16 13:50:47 T Connection 0 qIndex 4
+2017-06-16 13:50:47 E P00000108 Client disconnected, GLE=109
+2017-06-16 13:50:48 T Generating 0 msg/s  (0msg in 1125 mS)
+2017-06-16 13:50:48 T Connection 0 qIndex 4
+2017-06-16 13:50:48 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:50:48 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:50:48 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:50:48 E T0000010C Read error limit reached, closing connection
+2017-06-16 13:50:49 T Generating 0 msg/s  (0msg in 1047 mS)
+2017-06-16 13:50:49 T Connection 0 qIndex 4
+2017-06-16 13:50:50 T Generating 0 msg/s  (0msg in 1110 mS)
+2017-06-16 13:50:50 T Connection 0 qIndex 4
+2017-06-16 13:50:51 T Generating 0 msg/s  (0msg in 1094 mS)
+2017-06-16 13:50:51 T Connection 0 qIndex 4
+2017-06-16 13:50:54 T Listening on port 10000
+2017-06-16 13:50:54 T Starting Maccor mode
+2017-06-16 13:50:54 T ciup server listening un UDP port 10000
+2017-06-16 13:50:54 T pipe Server awaiting client connection
+2017-06-16 13:50:55 T Generating 0 msg/s  (0msg in 1031 mS)
+2017-06-16 13:50:56 T Started new connection T0000010C
+2017-06-16 13:50:56 D T0000010C Received START command
+2017-06-16 13:50:56 T Generating 0 msg/s  (0msg in 1047 mS)
+2017-06-16 13:50:56 T Connection 0 qIndex 0
+2017-06-16 13:50:58 T Generating 0 msg/s  (0msg in 1031 mS)
+2017-06-16 13:50:58 T Connection 0 qIndex 0
+2017-06-16 13:50:59 T Generating 0 msg/s  (0msg in 1110 mS)
+2017-06-16 13:50:59 T Connection 0 qIndex 0
+2017-06-16 13:51:00 T Generating 0 msg/s  (0msg in 1094 mS)
+2017-06-16 13:51:00 T Connection 0 qIndex 0
+2017-06-16 13:51:01 T Generating 0 msg/s  (0msg in 1109 mS)
+2017-06-16 13:51:01 T Connection 0 qIndex 0
+2017-06-16 13:51:02 T Generating 0 msg/s  (0msg in 1109 mS)
+2017-06-16 13:51:02 T Connection 0 qIndex 0
+2017-06-16 13:51:03 T Generating 0 msg/s  (0msg in 1015 mS)
+2017-06-16 13:51:03 T Connection 0 qIndex 0
+2017-06-16 13:51:04 T Generating 0 msg/s  (0msg in 1016 mS)
+2017-06-16 13:51:04 T Connection 0 qIndex 0
+2017-06-16 13:51:05 T Generating 0 msg/s  (0msg in 1016 mS)
+2017-06-16 13:51:05 T Connection 0 qIndex 0
+2017-06-16 13:51:05 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:51:05 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:51:05 E T0000010C w32_tcp_socket_read:peer disconnected
+2017-06-16 13:51:05 E T0000010C Read error limit reached, closing connection

@@ -5,8 +5,8 @@
 
 #include <iostream>
 #include <iomanip>
-#include "../A3P-1/win32_tcp_socket.h"
-#include "../A3P-1/Arbin3pp.h"
+#include "..\w32_tcp_socket_test\win32_tcp_socket.h"
+#include "..\A3P-1\Arbin3pp.h"
 
 w32_socket *sch1 = NULL;
 w32_socket *sch2 = NULL;
@@ -52,7 +52,7 @@ DWORD WINAPI thread_funct(LPVOID lpParam) {
 
 			if (ret == 0) {
 
-				std::cout << "peer disconnected on socket " << sock->sock << std::endl;
+				std::cout << "client disconnected on socket " << sock->sock << std::endl;
 				break;
 
 			}
@@ -94,12 +94,28 @@ DWORD WINAPI thread_funct(LPVOID lpParam) {
 	return 0;
 }
 
-int main()
+void print_usage(const char *exe)
 {
+	std::cerr << "Device simulator for Arbin 3rd party protocol" << std::endl;
+	std::cerr << "Open server tcp ports " << A3P_CH1_PORT << " " << A3P_CH2_PORT << std::endl;
+	std::cerr << "usage: " << exe << std::endl;
+	std::cerr << "  -h: show this help" << std::endl;
+}
+
+int main(int argc, char **argv)
+{
+	for (int i = 1; i < argc; i++) {
+
+		if (!strcmp(argv[i], "-h")) {
+			print_usage(argv[0]);
+			return 0;
+		}
+	}
+
 	// intercept CTRL-C
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
-	std::cout << "opening server on port:" << A3P_CH1_PORT << std::endl;
+	std::cout << "opening ch1 server on port:" << A3P_CH1_PORT << std::endl;
 	sch1 = w32_tcp_socket_server_create(A3P_CH1_PORT);
 
 	if (!sch1->lasterr.empty()) {
@@ -108,7 +124,7 @@ int main()
 		return -1;
 	}
 
-	std::cout << "opening server on port:" << A3P_CH2_PORT << std::endl;
+	std::cout << "opening ch2 server on port:" << A3P_CH2_PORT << std::endl;
 	sch2 = w32_tcp_socket_server_create(A3P_CH2_PORT);
 
 	if (!sch2->lasterr.empty()) {

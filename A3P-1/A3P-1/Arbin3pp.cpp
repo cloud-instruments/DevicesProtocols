@@ -1,5 +1,4 @@
 // Arbin 3rd party protocol functions
-// (c)2017 Matteo Lucarelli
 
 #include "stdafx.h"
 #include "Arbin3pp.h"
@@ -77,7 +76,7 @@ int a3p_write(w32_socket *s, a3p_msg &msg, std::string label)
 
 int a3p_read(w32_socket *s, a3p_msg *msg, std::string label)
 {
-	int ret = w32_tcp_socket_read(s, (char*)msg->buff, msg->size, (float)A3P_ANS_TIMEOUT_S);
+	int ret = w32_tcp_socket_read(s, (char*)msg->buff, msg->size, A3P_ANS_TIMEOUT_MS);
 
 	if (ret == 0) {
 
@@ -114,11 +113,11 @@ int a3p_get_ch1(a3p_msg *msg) {
 	return 0;
 }
 
+// send A3P_CMD_SET_SYSTEMTIME every A3P_SST_TIMEOUT_S (watchdog)
 DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 
 	a3p_queue_message(A3P_DBG, "CH1 thread started");
 	time_t prevTime=0;
-
 
 	while (gDoThreadCh1) {
 
@@ -127,7 +126,7 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 
 			// send CMD_SET_SYSTEMTIME
 			a3p_msg sst;
-			a3p_CMD_SET_SYSTEMTIME(&sst, (float)UX_TO_ARBIN_TIME(time(NULL)));
+			a3p_CMD_SET_SYSTEMTIME(&sst, (float)A3P_UX_TO_ARBIN_TIME(time(NULL)));
 
 			WaitForSingleObject(gCh1Mutex, INFINITE);
 
@@ -135,7 +134,7 @@ DWORD WINAPI a3p_ch1_thread_funct(LPVOID lpParam) {
 			if (ret == 0) {
 
 				char buff[1];
-				if (w32_tcp_socket_read(gCh1Sock, buff, 1, A3P_ANS_TIMEOUT_S) == 1) {
+				if (w32_tcp_socket_read(gCh1Sock, buff, 1, A3P_ANS_TIMEOUT_MS) == 1) {
 					if (*buff != 0x06) {
 						a3p_queue_message(A3P_ERR, "CH1 unexpected answer for CMD_SET_SYSTEMTIME");
 					}
@@ -175,7 +174,6 @@ int a3p_stop_ch1_thread() {
 
 	if (!gDoThreadCh1) return 0;
 	gDoThreadCh1 = false;
-	// TODO: error msg
 	if (WaitForSingleObject(gThreadCh1, 2000) == WAIT_TIMEOUT) {
 		a3p_queue_message(A3P_WRN, "CH1 thread force terminated");
 		TerminateThread(gThreadCh1, 0);
@@ -198,6 +196,7 @@ int a3p_get_ch2(a3p_msg *msg) {
 	return 0;
 }
 
+// continuously reasd ch2 and enqueue incoming messages
 DWORD WINAPI a3p_ch2_thread_funct(LPVOID lpParam) {
 
 	a3p_queue_message(A3P_DBG, "CH2 thread started");
@@ -264,10 +263,9 @@ int a3p_stop_ch2_thread() {
 
 // PUBLICS ////////////////////////////////////////////////////////////////////
 
-// TODO: CHNUM CHCOUNT
-int a3p_3rd_mode(bool enable) {
+int a3p_3rd_mode(WORD chNum, WORD chCount, bool enable) {
 
-	a3p_queue_message(A3P_DBG, "a3p_3rd_mode");
+	a3p_queue_message(A3P_TRC, "a3p_3rd_mode");
 
 	if (!gCh1Sock) return -1;
 
@@ -275,18 +273,18 @@ int a3p_3rd_mode(bool enable) {
 
 	// send CMD_SET_SYSTEMTIME
 	a3p_msg sdu;
-	a3p_CMD_3RD_SDU(&sdu, enable, A3P_DEFAULT_CH_NUM, A3P_DEFAULT_CH_COUNT);
+	a3p_CMD_3RD_SDU(&sdu, chNum, chCount, enable);
 
 	WaitForSingleObject(gCh1Mutex, INFINITE);
 
 	if (a3p_write(gCh1Sock, sdu, "CH1") == 0) {
 
 		// get answer
-		a3p_msg ans(a3p_CONFIRM_FEEDBAK_size());
+		a3p_msg ans(A3P_HEADER_SIZE + sizeof(MP_CONFIRM_FEEDBACK));
 
 		if (a3p_read(gCh1Sock,&ans,"CH1")==0) {
 			
-			a3p_parse_CONFIRM_FEEDBACK(&ans, &success, CMD_3RD_SDU_FEEDBACK);
+			a3p_parse_CONFIRM_FEEDBACK(&ans, &success, A3P_CMD_3RD_SDU_FEEDBACK);
 		}
 	}
 	ReleaseMutex(gCh1Mutex);
@@ -294,9 +292,58 @@ int a3p_3rd_mode(bool enable) {
 	return (success?0:-1);
 }
 
+int a3p_readdataorstate(
+	WORD chNum, 
+	WORD chCount, 
+	bool readdata,
+	BYTE controlState[A3P_MAXCHANNELNO],
+	float current[A3P_MAXCHANNELNO],
+	float voltage[A3P_MAXCHANNELNO]) 
+{
+	a3p_queue_message(A3P_TRC, "a3p_readdataorstate");
+
+	if (!gCh1Sock) return -1;
+	int ret = -1;
+
+	// send CMD_SET_SYSTEMTIME
+	a3p_msg msg;
+	a3p_CMD_3RD_READDATAORSTATE(&msg, chNum, chCount, readdata, !readdata);
+
+	WaitForSingleObject(gCh1Mutex, INFINITE);
+
+	if (a3p_write(gCh1Sock, msg, "CH1") == 0) {
+
+		// get answer
+		a3p_msg ans(A3P_HEADER_SIZE + sizeof(MP_INDEPENDENT_READDATAORSTATE));
+
+		if (a3p_read(gCh1Sock, &ans, "CH1") == 0) {
+
+			WORD ChNum, ChCount;
+			bool rd, rs;
+
+			a3p_parse_READDATAORSTATE_FEEDBACK(
+				&msg,
+				&ChNum,
+				&ChCount,
+				&rd,
+				&rs,
+				controlState,
+				current,
+				voltage
+			);
+			ret = 0;
+
+			// TODO: control ChNum, ChCount, rd, rs
+		}
+	}
+	ReleaseMutex(gCh1Mutex);
+
+	return ret;
+}
+
 int a3p_init(const char* addr) {
 
-	a3p_queue_message(A3P_DBG, "a3p_init");
+	a3p_queue_message(A3P_TRC, "a3p_init");
 
 	strncpy_s(gAddr, INET_ADDRSTRLEN, addr, INET_ADDRSTRLEN);
 
@@ -311,17 +358,20 @@ int a3p_init(const char* addr) {
 	return 0;
 }
 
-int a3p_connect(bool sst, bool sdu) {
+int a3p_connect(WORD chNum, WORD chCount, bool sst, bool sdu) {
+	
+	a3p_queue_message(A3P_TRC, "a3p_connect");
 
-	a3p_queue_message(A3P_DBG, "a3p_connect");
-
-	a3p_disconnect();
+	if (gCh1Sock != NULL) {
+		a3p_queue_message(A3P_WRN, "a3p_connect called with socket on");
+		return 0;
+	}
 
 	// connect CH1
 	gCh1Sock = w32_tcp_socket_client_create(gAddr, A3P_CH1_PORT);
 	if (!gCh1Sock->lasterr.empty()) {
 
-		// TODO: get w32_tcp_sock error
+		// get w32_tcp_sock error
 		a3p_queue_message(A3P_ERR, "CH1 Failed opening socket " + gCh1Sock->lasterr);
 		w32_tcp_socket_close(&gCh1Sock);
 		return -1;
@@ -334,7 +384,7 @@ int a3p_connect(bool sst, bool sdu) {
 	gCh2Sock = w32_tcp_socket_client_create(gAddr, A3P_CH2_PORT);
 	if (!gCh2Sock->lasterr.empty()) {
 
-		// TODO: get w32_tcp_sock error
+		// get w32_tcp_sock error
 		a3p_queue_message(A3P_ERR, "CH2 failed opening socket " + gCh2Sock->lasterr);
 		w32_tcp_socket_close(&gCh1Sock);
 		return -1;
@@ -344,7 +394,7 @@ int a3p_connect(bool sst, bool sdu) {
 	w32_tcp_socket_keepalive(gCh2Sock, A3P_KEEPALIVE_TIMEOUT_S, 1);
 
 	if (sdu) {
-		if (a3p_3rd_mode(true)!=0) a3p_queue_message(A3P_ERR, "Cannot enable 3rd party mode");
+		if (a3p_3rd_mode(chNum, chCount,true)!=0) a3p_queue_message(A3P_ERR, "Cannot enable 3rd party mode");
 	}
 
 	// start threads
@@ -354,9 +404,9 @@ int a3p_connect(bool sst, bool sdu) {
 	return 0;
 }
 
-int a3p_disconnect() {
+int a3p_disconnect(WORD chNum, WORD chCount) {
 
-	a3p_queue_message(A3P_DBG, "a3p_disconnect");
+	a3p_queue_message(A3P_TRC, "a3p_disconnect");
 
 	// stop threads
 	a3p_stop_ch2_thread();
@@ -364,7 +414,7 @@ int a3p_disconnect() {
 
 	// disable 3rd party mode
 	if (gCh1Sock) {
-		if (a3p_3rd_mode(false) != 0)  a3p_queue_message(A3P_ERR, "Cannot disable 3rd party mode");
+		if (a3p_3rd_mode(chNum, chCount,false) != 0)  a3p_queue_message(A3P_ERR, "Cannot disable 3rd party mode");
 	}
 
 	// close sockets
@@ -374,11 +424,11 @@ int a3p_disconnect() {
 	return 0;
 }
 
-int a3p_delete() {
+int a3p_delete(WORD chNum, WORD chCount) {
 
-	a3p_queue_message(A3P_DBG, "a3p_delete");
+	a3p_queue_message(A3P_TRC, "a3p_delete");
 
-	a3p_disconnect();
+	a3p_disconnect(chNum, chCount);
 
 	// TODO: empty queues
 

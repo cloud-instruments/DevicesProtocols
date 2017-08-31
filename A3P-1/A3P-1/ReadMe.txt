@@ -25,5 +25,5 @@ A3P-1.exe -1 x.x.x.x
 
 # as previous but change device mode to 3rd party 
 # expected to run without errors
-# WARN: could interfere with yet runnig tests on the Arbin device
+# WARN: could interfere with yet running tests on the Arbin device
 A3P-1.exe -2 x.x.x.x  

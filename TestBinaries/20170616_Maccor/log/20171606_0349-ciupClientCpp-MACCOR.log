@@ -1,0 +1,4 @@
+2017-06-16 13:49:23 T Connecting  127.0.0.1:10000ciupClientTest.exe
+2017-06-16 13:49:23 T Connection id: 0
+2017-06-16 13:49:23 T 0: (2) {"counter":"0","channel":"0","Stime":"1.64569e-37","Ktemp":"0","Acurr":"-5.0508e+29","Vdiff":"0","AHcap":"1.66231e+24"}
+2017-06-16 13:49:25 T 0: (2) {"counter":"1","channel":"0","Stime":"1.64569e-37","Ktemp":"0","Acurr":"-5.0508e+29","Vdiff":"0","AHcap":"1.66231e+24"}
