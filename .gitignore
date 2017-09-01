@@ -26,3 +26,12 @@
 /CIUP/UnitTestServer/Release
 /CIUP/w32_message_pipe_test/Release
 /CIUP/w32_tcp_socket_test/Release
+/CIUP/ciupClientDll/Debug
+/CIUP/ciupClientTest/Debug
+/CIUP/ciupServer/Debug
+/CIUP/ciupServerMaccorDll/Debug
+/CIUP/ciupServerMaccorDllTest/Debug
+/CIUP/UnitTestCommon/Debug
+/CIUP/UnitTestServer/Debug
+/CIUP/w32_message_pipe_test/Debug
+/CIUP/w32_tcp_socket_test/Debug
