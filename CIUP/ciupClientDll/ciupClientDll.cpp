@@ -33,11 +33,17 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 	oss << "{";
 	oss << "\"counter\":\"" << d.counter << "\",";
 	oss << "\"channel\":\"" << d.channel << "\",";
-	oss << "\"Stime\":\"" << d.Stime << "\",";
-	oss << "\"Ktemp\":\"" << d.Ktemp << "\",";
-	oss << "\"Acurr\":\"" << d.Acurr << "\",";
-	oss << "\"Vdiff\":\"" << d.Vdiff << "\",";
-	oss << "\"AHcap\":\"" << d.AHcap << "\"";
+	oss << "\"Cycle\":\"" << d.Cycle << "\",";
+	oss << "\"TestTime\":\"" << d.TestTime << "\",";
+	oss << "\"StepTime\":\"" << d.StepTime << "\",";
+	oss << "\"Current\":\"" << d.Current << "\",";
+	oss << "\"Voltage\":\"" << d.Voltage << "\"";
+	oss << "\"Capacity\":\"" << d.Capacity << "\"";
+	oss << "\"LHCCapacity\":\"" << d.LHCCapacity << "\"";
+	oss << "\"HCCapacity\":\"" << d.HCCapacity << "\"";
+	oss << "\"Energy\":\"" << d.Energy << "\"";
+	oss << "\"HCEnergy\":\"" << d.HCEnergy << "\"";
+	oss << "\"LHCEnergy\":\"" << d.LHCEnergy << "\"";
 	oss << "}";
 
 	ret = oss.str();

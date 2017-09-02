@@ -80,8 +80,8 @@ void TSStatusDataLog(TStatusData* d) {
 	}
 
 	*gLog << "TStatusData "
-		<< "'RF1':'" << (int)d->RF1 << "'"
-		<< ", 'RF2':'" << (int)d->RF2 << "'"
+		<< "'RF1':'" << int(d->RF1) << "'"
+		<< ", 'RF2':'" << int(d->RF2) << "'"
 		<< ", 'Cycle':'" << d->Cycle << "'"
 		<< ", 'Step':'" << d->Step << "'"
 		<< ", 'TestTime':'" << d->TestTime << "'"
@@ -386,13 +386,26 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 
 			// fill ciupDataPoint
 			ciupDataPoint p;
-			if (channel < CIUP_CH_MAX_COUNT) p.counter = gCounter[channel];
-			p.channel = channel;
-			p.Stime = StatusData->TestTime;
-			p.Ktemp = 0; // unkknow in maccor
-			p.Acurr = StatusData->Current;
-			p.Vdiff = StatusData->Voltage;
-			p.AHcap = StatusData->Capacity;
+			if (channel < CIUP_CH_MAX_COUNT)
+			{
+				p.channel = channel;
+				p.counter = gCounter[channel];
+			}
+
+			p.Cycle = StatusData->Cycle;
+			p.Step = StatusData->Step;
+			p.TestTime = StatusData->TestTime;
+			p.StepTime = StatusData->StepTime;
+			p.Current = StatusData->Current;
+			p.Voltage = StatusData->Voltage;
+			p.Capacity = StatusData->Capacity;
+			p.LHCCapacity = StatusData->LHCCapacity;
+			p.HCCapacity = StatusData->HCCapacity;
+			p.Energy = StatusData->Energy;
+			p.HCEnergy = StatusData->HCEnergy;
+			p.LHCEnergy = StatusData->LHCEnergy;
+			p.RF1 = StatusData->RF1;
+			p.RF2 = StatusData->RF2;
 
 			DWORD wrote;
 			DWORD ret = w32_message_pipe_write(gPipe, &p, sizeof(ciupDataPoint), &wrote);

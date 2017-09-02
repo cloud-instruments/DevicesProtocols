@@ -12,19 +12,27 @@ DWORD WINAPI serverEmulatorChannelThread(LPVOID lpParam) {
 	ciupDataPoint point;
 	USHORT counter = 0;
 	ULONGLONG sTime = GetTickCount64();
-
+	int cycle = 0;
 	while (gRun) {
 
 		point.counter = counter;
 		point.channel = ch;
-		point.Stime = (float)(GetTickCount64() - sTime) / 1000;
-		point.Acurr = (float)rand() / RAND_MAX;
-		point.AHcap = (float)rand() / RAND_MAX;
-		point.Ktemp = (float)rand() / RAND_MAX;
-		point.Vdiff = (float)rand() / RAND_MAX;
-
+		point.Cycle = cycle;
+		point.TestTime = (float)(GetTickCount64() - sTime) / 1000;
+		point.StepTime = (float)(GetTickCount64() - sTime) / 1000;
+		point.Current = (float)rand() / RAND_MAX;
+		point.Voltage = (float)rand() / RAND_MAX;
+		point.Capacity = (float)rand() / RAND_MAX;
+		point.LHCCapacity = (float)rand() / RAND_MAX;
+		point.HCCapacity = (float)rand() / RAND_MAX;
+		point.Energy = (float)rand() / RAND_MAX;
+		point.HCEnergy = (float)rand() / RAND_MAX;
+		point.LHCEnergy = (float)rand() / RAND_MAX;
+		point.RF1 = (uint8)rand() / RAND_MAX;
+		point.RF2 = (uint8)rand() / RAND_MAX;
+		
 		ciupServerEnqueueDatapoint(point);
-
+		cycle++;
 		counter = ++counter%USHRT_MAX;
 		Sleep(gSleep);
 	}

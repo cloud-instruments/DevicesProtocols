@@ -8,6 +8,7 @@
 //  S bytes: payload
 //  1 byte: checksum (sum of previous bytes)
 //  1 byte: checksum negated (0xFF-chk)
+typedef unsigned char  uint8;
 
 #pragma once
 
@@ -108,12 +109,21 @@ typedef struct {
 
 	USHORT counter;         // counter for messages sequence
 	USHORT channel;         // device channel of the data
-	float Stime = 0;        // data time in S
-	float Ktemp = 0;        // temperature in K
-	float Acurr = 0;        // current in A
-	float Vdiff = 0;        // Voltage in V
-	float AHcap = 0;        // capacity in Ah
-
+	float TestTime = 0;        // data time in S
+	float Current = 0;        // current in A
+	float Voltage = 0;        // Voltage in V
+	float Capacity = 0;        // capacity in Ah
+	uint8 RF1 = 0;			// This is the mode of the test step - Current/Voltage/Power/Resistance- 4.5.3.2 Mode and Mode Value p.170 
+	uint8 RF2 = 0;			// This the ES code of the test step
+	int Cycle = 0;			// Cycle number
+	int Step = 0;			// Test step (zero based)
+	float StepTime = 0;		// Step time in seconds
+	float HCCapacity = 0;	// Half cycle capacity in Ah
+	float LHCCapacity = 0;	// Last half cycle capacity in Ah
+	float Energy = 0;		// Energy in Wh
+	float HCEnergy = 0;		// Half cycle energy in Wh
+	float LHCEnergy = 0;	// Last half cycle energy in Wh
+	float tFactor = 0;		// Tick time in seconds
 } ciupDataPoint;
 #pragma pack()
 
