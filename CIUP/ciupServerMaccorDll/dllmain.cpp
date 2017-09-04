@@ -388,8 +388,8 @@ __declspec(dllexport) int __stdcall GetSetpointRevA(
 			ciupDataPoint p;
 			if (channel < CIUP_CH_MAX_COUNT)
 			{
-				p.channel = channel;
-				p.counter = gCounter[channel];
+				p.channel = channel + 1; //starts from 0 so adding 1 
+				p.counter = gCounter[channel + 1];
 			}
 
 			p.Cycle = StatusData->Cycle;

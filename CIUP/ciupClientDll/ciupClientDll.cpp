@@ -18,7 +18,7 @@ void ciupJsonSerialize(ciupServerInfo d, std::string &ret) {
 
 	oss << "{";
 	oss << "\"id\":\"" << d.id << "\",";
-	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\"";
+	oss << "\"status\":\"" << CIUP_STATUS_DESCR(d.status) << "\",";
 	oss << "\"mode\":\"" << (int)(d.mode) << "\"";
 	oss << "}";
 
@@ -36,6 +36,9 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 	oss << "\"Cycle\":\"" << d.Cycle << "\",";
 	oss << "\"TestTime\":\"" << d.TestTime << "\",";
 	oss << "\"StepTime\":\"" << d.StepTime << "\",";
+	oss << "\"Step\":\"" << d.Step << "\",";
+	//oss << "\"RF1\":\"" << d.RF1 << "\",";
+	//oss << "\"RF2\":\"" << d.RF2 << "\",";
 	oss << "\"Current\":\"" << d.Current << "\",";
 	oss << "\"Voltage\":\"" << d.Voltage << "\",";
 	oss << "\"Capacity\":\"" << d.Capacity << "\",";
@@ -49,44 +52,44 @@ void ciupJsonSerialize(ciupDataPoint d, std::string &ret) {
 	ret = oss.str();
 }
 
-// convert payload of msg to jason string
+// convert payload of msg to json string
 int ciupJsonSerialize(const BYTE* msg, std::string &res) {
 
 	int ret = CIUP_NO_ERR;
 
 	switch (*(msg + CIUP_TYPE_POS)) {
 
-		case CIUP_MSG_SERVERINFO: 
-		{
-			ciupServerInfo d;
+	case CIUP_MSG_SERVERINFO:
+	{
+		ciupServerInfo d;
 
-			// check payload size
-			if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
-				ret = CIUP_ERR_SIZE_MISMATCH;
-			}
-
-			memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
-			ciupJsonSerialize(d, res);
+		// check payload size
+		if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
+			ret = CIUP_ERR_SIZE_MISMATCH;
 		}
-		break;
 
-		case CIUP_MSG_DATAPOINT: 
-		{
-			ciupDataPoint d;
+		memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
+		ciupJsonSerialize(d, res);
+	}
+	break;
 
-			// check payload size
-			if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
-				ret = CIUP_ERR_SIZE_MISMATCH;
-			}
+	case CIUP_MSG_DATAPOINT:
+	{
+		ciupDataPoint d;
 
-			memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
-			ciupJsonSerialize(d,res);
+		// check payload size
+		if (CIUP_PAYLOAD_SIZE(msg) != sizeof(d)) {
+			ret = CIUP_ERR_SIZE_MISMATCH;
 		}
-		break;
 
-		default:
-			ret = CIUP_ERR_UNKNOWN_TYPE;
-			break;
+		memcpy_s(&d, sizeof(d), msg + CIUP_PAYLOAD_POS, sizeof(d));
+		ciupJsonSerialize(d, res);
+	}
+	break;
+
+	default:
+		ret = CIUP_ERR_UNKNOWN_TYPE;
+		break;
 	}
 
 	return ret;
@@ -94,15 +97,15 @@ int ciupJsonSerialize(const BYTE* msg, std::string &res) {
 
 // connections threads /////////////////////////////////////////////////////////
 
-typedef struct ciupConnectionData_t{
+typedef struct ciupConnectionData_t {
 
-	ciupDataCb dataCb=0;
-	ciupErrorCb errorCb=0;
-	w32_socket *sock=NULL;
+	ciupDataCb dataCb = 0;
+	ciupErrorCb errorCb = 0;
+	w32_socket *sock = NULL;
 	char addr[INET_ADDRSTRLEN] = {};
-	unsigned short port=0;
+	unsigned short port = 0;
 	bool run = false;
-	HANDLE hThread=0;
+	HANDLE hThread = 0;
 	std::queue<BYTE> commands;
 
 	void setup(ciupDataCb c, ciupErrorCb e, w32_socket *s, const char *a, unsigned short p)
@@ -132,7 +135,7 @@ typedef struct ciupConnectionData_t{
 		if (errorCb != NULL) return false;
 		if (sock != NULL) return false;
 		if (*addr != 0) return false;
-		if (port  != 0) return false;
+		if (port != 0) return false;
 		if (run != false) return false;
 		if (hThread != 0) return false;
 		if (!commands.empty()) return false;
@@ -218,7 +221,7 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 		else if (ret < 0) {
 
 			// socket error
-			ciupError(id, CIUP_ERR_SOCKET, "w32_tcp_socket_read error:",ret);
+			ciupError(id, CIUP_ERR_SOCKET, "w32_tcp_socket_read error:", ret);
 			rErr++;
 		}
 		else if (ciupCheckMessageSyntax(buff, ret) != CIUP_NO_ERR) {
@@ -239,8 +242,8 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 			bool seqError = false;
 			if (*(buff + CIUP_TYPE_POS) == CIUP_MSG_DATAPOINT) {
 
-				USHORT counter = *((USHORT*)(buff+CIUP_PAYLOAD_POS));
-				USHORT channel = *((USHORT*)(buff + CIUP_PAYLOAD_POS+2));
+				USHORT counter = *((USHORT*)(buff + CIUP_PAYLOAD_POS));
+				USHORT channel = *((USHORT*)(buff + CIUP_PAYLOAD_POS + 2));
 
 				if (chCount[channel] != -1) {
 					int expected = (chCount[channel] + 1) % USHRT_MAX;
@@ -267,7 +270,7 @@ DWORD WINAPI ciupConnectionThread(LPVOID lpParam) {
 		}
 
 		// if required reconnect
-		while (ciupConnectionsList[id].run &&( ciupConnectionsList[id].sock == NULL)){
+		while (ciupConnectionsList[id].run && (ciupConnectionsList[id].sock == NULL)) {
 
 			ciupConnectionsList[id].sock = w32_tcp_socket_client_create(ciupConnectionsList[id].addr, ciupConnectionsList[id].port);
 			if (!ciupConnectionsList[id].sock->lasterr.empty()) {
@@ -299,7 +302,7 @@ extern "C" {
 		int id = getFreeId();
 		if (id < 0) return CIUP_ERR_MAX_CONNECTIONS;
 
-		w32_socket *s= w32_tcp_socket_client_create(addr, port);
+		w32_socket *s = w32_tcp_socket_client_create(addr, port);
 		if (!s->lasterr.empty()) {
 			w32_tcp_socket_close(&s);
 			return CIUP_ERR_SOCKET;
