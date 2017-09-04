@@ -171,6 +171,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	std::cout << "Channel Count: " << chCount << std::endl;
+
 	// Validate the parameters
 	if (argc < expected_argc) {
 		print_usage(argv[0]);
@@ -181,7 +183,7 @@ int main(int argc, char **argv)
 	if (!logpath.empty()) {
 		logStream = new std::ofstream(logpath, std::ios::app);
 		plog = new streamlog(*logStream, logFilter);
-		std::cout << "Logging to " << logpath << std::endl;
+		std::cout << "Logging to: " << logpath << std::endl;
 	}
 
 	// get server listening port
@@ -193,6 +195,7 @@ int main(int argc, char **argv)
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 
 	ciupServerSetLogFilter(logFilter);
+	std::cout << "Log Filter: " << logFilter << std::endl;
 
 	// set server info
 	setServerInfo(CIUP_ST_IDLE, "ciupServer", gRunMode);
@@ -235,7 +238,7 @@ int main(int argc, char **argv)
 
 	}
 
-	int mlogN;
+	int mlogN = 0;
 	int slogN;
 	ciupLog mlog;
 	ciupLog slog;

@@ -70,10 +70,10 @@ typedef unsigned char  uint8;
 
 // server and connection status 
 enum ciupStatus {
-	CIUP_ST_UNKNOWN      = 0,
-	CIUP_ST_IDLE         = 1,
-	CIUP_ST_WORKING      = 2,
-	CIUP_ST_CONNECTED    = 3,
+	CIUP_ST_UNKNOWN = 0,
+	CIUP_ST_IDLE = 1,
+	CIUP_ST_WORKING = 2,
+	CIUP_ST_CONNECTED = 3,
 	CIUP_ST_DISCONNECTED = 4
 };
 
@@ -81,8 +81,8 @@ enum ciupStatus {
 enum ciupServerRunMode {
 
 	RM_EMULATOR = 0,
-	RM_MACCOR   = 1,
-	RM_ARBIN    = 2
+	RM_MACCOR = 1,
+	RM_ARBIN = 2
 };
 
 // strings for ciupStatus description
@@ -98,7 +98,7 @@ typedef struct {
 
 	ciupStatus status = CIUP_ST_UNKNOWN;
 	char id[CIUP_MAX_STRING_SIZE] = {};
-	ciupServerRunMode mode= RM_EMULATOR;
+	ciupServerRunMode mode = RM_EMULATOR;
 
 } ciupServerInfo;
 #pragma pack()
@@ -132,8 +132,8 @@ typedef struct {
 // WARN: message must be delete [] after use
 void *ciupBuildMessage(
 	BYTE type,                   // message type, use CIUP_MSG_* defines
-	void* payload=NULL,          // payload pointer 
-	size_t payload_size=0        // payload size
+	void* payload = NULL,          // payload pointer 
+	size_t payload_size = 0        // payload size
 );
 
 // check the message correctness

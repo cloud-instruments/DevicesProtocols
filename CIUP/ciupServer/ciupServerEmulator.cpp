@@ -6,7 +6,7 @@ static int gSleep;
 
 DWORD WINAPI serverEmulatorChannelThread(LPVOID lpParam) {
 
-	int ch = (int)lpParam;
+	int ch = (int)lpParam + 1;
 
 	ciupLog log;
 	ciupDataPoint point;
@@ -20,6 +20,7 @@ DWORD WINAPI serverEmulatorChannelThread(LPVOID lpParam) {
 		point.Cycle = cycle;
 		point.TestTime = (float)(GetTickCount64() - sTime) / 1000;
 		point.StepTime = (float)(GetTickCount64() - sTime) / 1000;
+		point.Step = cycle;
 		point.Current = (float)rand() / RAND_MAX;
 		point.Voltage = (float)rand() / RAND_MAX;
 		point.Capacity = (float)rand() / RAND_MAX;

@@ -2,7 +2,6 @@
 // example of typical use for C#
 
 using System;
-using System.Globalization;
 
 namespace ciupClientTest_csc
 {
@@ -190,6 +189,7 @@ namespace ciupClientTest_csc
             }
             catch (Exception e)
             {
+                PrintLog(logLevel.trace, e.ToString());
                 Console.WriteLine($"Error: {e}");
             }
         }
