@@ -24,10 +24,10 @@ typedef unsigned char  uint8;
 #define CIUP_TYPE_POS (4)
 
 // max message size at all
-#define CIUP_MAX_MSG_SIZE (2048)
+#define CIUP_MAX_MSG_SIZE (512)
 
 // max side of strings inside messages
-#define CIUP_MAX_STRING_SIZE (1024)
+#define CIUP_MAX_STRING_SIZE (256)
 
 // message buffer size given the payload size
 //#define CIUP_MSG_SIZE(payload_size) ((payload_size)+CIUP_MSG_HSIZE)
