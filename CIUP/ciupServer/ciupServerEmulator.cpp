@@ -17,7 +17,7 @@ DWORD WINAPI serverEmulatorChannelThread(LPVOID lpParam) {
 
 		point.counter = counter;
 		point.channel = ch;
-		point.Cycle = cycle;
+		point.Cycle = (cycle / 100) + 1;
 		point.TestTime = (float)(GetTickCount64() - sTime) / 1000;
 		point.StepTime = (float)(GetTickCount64() - sTime) / 1000;
 		point.Step = cycle;
